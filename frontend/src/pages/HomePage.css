@@ -1,0 +1,37 @@
+/* frontend/src/pages/HomePage.css */
+.home-container {
+  padding: 40px;
+  text-align: center;
+}
+
+.home-header h1 {
+  color: #9D4EDD;
+  font-size: 48px;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin-top: 50px;
+}
+
+.tool-card {
+  background-color: #1E1E1E;
+  border: 1px solid #3A3A3A;
+  border-radius: 16px;
+  padding: 30px;
+  text-decoration: none;
+  color: white;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tool-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 10px 20px rgba(157, 78, 221, 0.2);
+}
+
+.tool-card h2 {
+  margin-top: 0;
+  color: #9D4EDD;
+}

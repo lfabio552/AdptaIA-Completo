@@ -1,0 +1,47 @@
+/* Define um estilo base para a página inteira */
+body {
+  background-color: #f0f2f5; /* Um cinza bem claro para o fundo */
+  font-family: sans-serif;   /* Uma fonte mais moderna e limpa */
+  color: #333;              /* Cor do texto principal */
+  text-align: center;      /* Centraliza todo o texto */
+}
+
+/* Estilo para o nosso container principal */
+.container {
+  max-width: 800px;
+  margin: 40px auto; /* Centraliza o container na página */
+  padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Sombra suave */
+}
+
+/* Estilo para o botão principal */
+button {
+  background-color: #6a0dad; /* Um roxo vibrante */
+  color: white;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 8px; /* Cantos arredondados */
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s; /* Efeito suave ao passar o mouse */
+  margin-top: 20px; /* Espaço acima do botão */
+}
+
+/* Efeito para quando o mouse passa por cima do botão */
+button:hover {
+  background-color: #4c0a7d; /* Um roxo mais escuro */
+}
+
+/* Estilo para a caixa de texto */
+textarea {
+  width: 95%;
+  height: 100px;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-top: 20px;
+}

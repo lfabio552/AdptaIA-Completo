@@ -1,0 +1,70 @@
+/* ---- ESTILOS GERAIS DA PÁGINA ---- */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Nossas cores! */
+  background-color: #121212; /* Fundo super escuro */
+  color: #FFFFFF;             /* Cor do texto padrão: branco */
+}
+
+/* ---- ESTILO DO CONTAINER PRINCIPAL ("CARD") ---- */
+.container {
+  max-width: 800px;
+  margin: 50px auto; /* Centraliza o card na página */
+  padding: 40px;
+  background-color: #1E1E1E; /* Fundo do card, um pouco mais claro */
+  border-radius: 16px;      /* Cantos bem arredondados */
+  border: 1px solid #3A3A3A; /* Borda sutil */
+  text-align: center;
+}
+
+/* ---- ESTILOS DOS TEXTOS ---- */
+h1 {
+  color: #9D4EDD; /* Cor roxa vibrante para o título principal */
+  font-size: 36px;
+}
+
+p {
+  font-size: 18px;
+  color: #c7c7c7; /* Um cinza claro para os textos secundários */
+}
+
+/* ---- ESTILOS DOS FORMULÁRIOS ---- */
+textarea, select {
+  width: 95%;
+  padding: 15px;
+  margin-top: 20px;
+  font-size: 16px;
+  border-radius: 8px;
+  
+  /* Estilo dark mode para os campos */
+  background-color: #2A2A2A;
+  border: 1px solid #3A3A3A;
+  color: #FFFFFF;
+}
+
+/* ---- ESTILO DO BOTÃO PRINCIPAL ---- */
+button {
+  background-color: #9D4EDD; /* Fundo roxo vibrante */
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  
+  padding: 15px 40px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 30px;
+
+  /* Efeito suave ao passar o mouse */
+  transition: transform 0.2s ease-in-out;
+}
+
+button:hover {
+  transform: scale(1.05); /* Efeito de "crescer" um pouco ao passar o mouse */
+}
