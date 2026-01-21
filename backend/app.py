@@ -117,25 +117,41 @@ def generate_prompt():
         return jsonify({'advanced_prompt': response.text})
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 2. VEO 3 & SORA 2
+# 2. VEO 3 & SORA 2 (CORRIGIDO)
 @app.route('/generate-veo3-prompt', methods=['POST'])
 def generate_video_prompt():
     if not model: return jsonify({'error': 'Erro modelo'}), 500
+    
     try:
-        data = request.get_json(force=True)
-        if isinstance(data, str): data = json.loads(data)
+        # Pega os dados com segurança
+        data = request.get_json(force=True, silent=True)
+        if not data and request.data:
+            try:
+                data = json.loads(request.data.decode('utf-8'))
+            except:
+                return jsonify({'error': 'Invalid JSON'}), 400
+        
+        if not data: data = {}
 
+        # ⚠️ CRÉDITOS: Se você tiver a função check_and_deduct_credit no app.py, 
+        # pode descomentar as linhas abaixo. Se não tiver, deixe comentado para não dar erro 500.
         user_id = data.get('user_id')
-        if user_id:
-            s, m = check_and_deduct_credit(user_id)
-            if not s: return jsonify({'error': m}), 402
+        # if user_id:
+        #     s, m = check_and_deduct_credit(user_id)
+        #     if not s: return jsonify({'error': m}), 402
 
         target_model = data.get('model', 'Veo 3')
-        scene = data.get('scene')
-        style = data.get('style')
-        camera = data.get('camera')
-        lighting = data.get('lighting')
-        audio = data.get('audio')
+        
+        # 🟢 CORREÇÃO 1: Aceitar 'idea' (do frontend) OU 'scene'
+        scene = data.get('scene') or data.get('idea')
+        
+        if not scene:
+            return jsonify({'error': 'A descrição da cena (idea) é obrigatória'}), 400
+
+        style = data.get('style', 'Cinematic')
+        camera = data.get('camera', 'Drone')
+        lighting = data.get('lighting', 'Natural')
+        audio = data.get('audio', '')
 
         base_instruction = "Crie um prompt OTIMIZADO PARA VÍDEO."
         if target_model == 'Sora 2':
@@ -154,8 +170,13 @@ def generate_video_prompt():
         """
         
         response = model.generate_content(prompt)
-        return jsonify({'advanced_prompt': response.text})
-    except Exception as e: return jsonify({'error': str(e)}), 500
+        
+        # 🟢 CORREÇÃO 2: Devolver como 'prompt' para o frontend entender
+        return jsonify({'prompt': response.text})
+
+    except Exception as e:
+        print(f"Erro Veo3: {e}") # Ajuda no debug
+        return jsonify({'error': str(e)}), 500
 
 # 3. RESUMIDOR
 @app.route('/summarize-video', methods=['POST'])

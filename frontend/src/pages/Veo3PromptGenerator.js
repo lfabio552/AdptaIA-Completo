@@ -47,7 +47,7 @@ export default function Veo3PromptGenerator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Faça login para continuar.');
 
-      const response = await fetch(config.ENDPOINTS.GENERATE_VIDEO_PROMPT, {
+      const response = await fetch(config.ENDPOINTS.GENERATE_VEO3_PROMPT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
