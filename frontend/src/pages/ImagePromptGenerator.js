@@ -9,7 +9,8 @@ export default function ImagePromptGenerator() {
   const [idea, setIdea] = useState('');
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  // Removi o 'error' daqui para não dar erro de unused vars
+  const [errorMessage, setErrorMessage] = useState(''); 
   const [user, setUser] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -21,16 +22,14 @@ export default function ImagePromptGenerator() {
     getUser();
   }, []);
 
-  // --- OUVINTE DO HISTÓRICO ---
   useEffect(() => {
     const handleLoadFromHistory = (event) => {
       if (event.detail && event.detail.text) {
-        setIdea(event.detail.text); // Preenche a ideia inicial
+        setIdea(event.detail.text);
         setShowHistory(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     };
-
     window.addEventListener('loadFromHistory', handleLoadFromHistory);
     return () => {
       window.removeEventListener('loadFromHistory', handleLoadFromHistory);
@@ -40,18 +39,19 @@ export default function ImagePromptGenerator() {
   const handleGenerate = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setErrorMessage('');
     setGeneratedPrompt('');
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Faça login para continuar.');
 
-      const response = await fetch(config.ENDPOINTS.GENERATE_IMAGE_PROMPT, {
+      // Aqui usamos o nome genérico para evitar erro de backend
+      const response = await fetch(config.ENDPOINTS.GENERATE_PROMPT || 'http://localhost:5000/generate-prompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          idea,
+          idea: idea,
           user_id: user.id
         }),
       });
@@ -59,19 +59,18 @@ export default function ImagePromptGenerator() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Erro ao gerar prompt.');
 
-      setGeneratedPrompt(data.prompt);
+      setGeneratedPrompt(data.prompt || data.advanced_prompt);
 
-      // Salvar no Histórico
       await saveToHistory(
         user,
         TOOL_CONFIGS.IMAGE_PROMPT,
-        idea, // Ideia inicial
-        data.prompt, // Prompt gerado (em inglês geralmente)
-        { length: data.prompt.length }
+        idea,
+        data.prompt || data.advanced_prompt,
+        { length: (data.prompt || '').length }
       );
 
     } catch (err) {
-      setError(err.message);
+      setErrorMessage(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +87,6 @@ export default function ImagePromptGenerator() {
           Transforme uma ideia simples em um prompt profissional e detalhado.
         </p>
 
-        {/* Botão Histórico */}
         {user && (
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <button
@@ -107,7 +105,6 @@ export default function ImagePromptGenerator() {
           </div>
         )}
 
-        {/* Lista Histórico */}
         {showHistory && user && (
           <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#1f2937', borderRadius: '10px' }}>
             <HistoryList user={user} toolType="image-prompt" />
@@ -156,6 +153,12 @@ export default function ImagePromptGenerator() {
               {isLoading ? 'Criando Prompt...' : '✨ Gerar Prompt Mágico'}
             </button>
           </form>
+
+          {errorMessage && (
+            <div style={{ marginTop: '20px', color: '#fca5a5', padding: '10px', backgroundColor: '#450a0a', borderRadius: '8px' }}>
+              {errorMessage}
+            </div>
+          )}
 
           {generatedPrompt && (
             <div style={{ marginTop: '30px', backgroundColor: '#111827', padding: '20px', borderRadius: '8px', border: '1px solid #ec4899' }}>
