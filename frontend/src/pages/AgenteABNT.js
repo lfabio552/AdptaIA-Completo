@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient';
 import ExemplosSection from '../components/ExemplosSection';
 import { saveHistoryItem } from '../utils/history';
 import HistoryList from '../components/HistoryList';
+import config from '../config'; // 👈 1. IMPORTAMOS O CONFIG AQUI
 
 export default function AgenteABNT() {
   // Estados
@@ -13,9 +14,9 @@ export default function AgenteABNT() {
   const [error, setError] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [user, setUser] = useState(null); // ✅ Estado para o usuário
+  const [user, setUser] = useState(null);
 
-  // ✅ Obter usuário ao carregar componente
+  // Obter usuário ao carregar componente
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -24,7 +25,7 @@ export default function AgenteABNT() {
     getUser();
   }, []);
 
-  // ✅ Ouvir eventos do histórico
+  // Ouvir eventos do histórico
   useEffect(() => {
     const handleLoadFromHistory = (event) => {
       if (event.detail && event.detail.text) {
@@ -50,16 +51,16 @@ export default function AgenteABNT() {
     setFormattedText('');
 
     try {
-      // ✅ Agora user já está no estado, mas confirmamos
       if (!user) {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         if (!currentUser) throw new Error('Login necessário.');
-        setUser(currentUser); // Atualiza estado se necessário
+        setUser(currentUser);
       }
 
-      const currentUser = user; // Usar do estado
+      const currentUser = user;
 
-      const response = await fetch('https://meu-gerador-backend.onrender.com/format-abnt', {
+      // 👇 2. USAMOS O ENDEREÇO DO CONFIG (Seja local ou nuvem, ele se vira)
+      const response = await fetch(config.ENDPOINTS.FORMAT_ABNT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -115,7 +116,8 @@ export default function AgenteABNT() {
     setError('');
 
     try {
-      const response = await fetch('https://meu-gerador-backend.onrender.com/download-docx', {
+      // 👇 3. AQUI TAMBÉM USAMOS O CONFIG
+      const response = await fetch(config.ENDPOINTS.DOWNLOAD_DOCX, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ markdown_text: formattedText }),
@@ -149,7 +151,6 @@ export default function AgenteABNT() {
         <h1>Agente de Formatação ABNT 🎓</h1>
         <p>Cole seu trabalho abaixo e deixe a IA formatar para você.</p>
         
-        {/* ✅ Agora user está definido */}
         {user && (
           <button
             onClick={() => setShowHistory(!showHistory)}
@@ -170,7 +171,6 @@ export default function AgenteABNT() {
         )}
       </header>
       
-      {/* ✅ Agora user está definido */}
       {showHistory && user && (
         <div style={{
           marginBottom: '30px',
@@ -279,7 +279,7 @@ export default function AgenteABNT() {
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
-                cursor: isDownloading ? 'not-allowed' : 'pointer',
+                cursor: 'pointer',
                 opacity: isDownloading ? 0.7 : 1,
                 fontWeight: 'bold'
               }}
@@ -289,7 +289,7 @@ export default function AgenteABNT() {
           </div>
         </div>
       )}
-    
+      
       <ExemplosSection ferramentaId="agente-abnt" />
     </div>
   );

@@ -2,20 +2,23 @@
 
 /**
  * CONFIGURAÇÕES CENTRALIZADAS DO ADAPTA IA
- * 
- * Como usar:
- * 1. Importe: import config from './config';
- * 2. Use: fetch(config.ENDPOINTS.GENERATE_IMAGE, ...)
- * 
- * Variáveis de ambiente no Vercel:
- * REACT_APP_API_URL=https://meu-gerador-backend.onrender.com
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://meu-gerador-backend.onrender.com';
+// ==================================================================
+// 👇 AQUI É A CHAVE MESTRA: ESCOLHA ONDE O SITE VAI CONECTAR
+// ==================================================================
+
+// 🟢 MODO LOCAL (Ativado: Use este para testar no seu PC agora)
+// const API_BASE_URL = 'http://localhost:3000';
+
+// ☁️ MODO NUVEM (Desativado: Use este quando for enviar para a Vercel)
+const API_BASE_URL = 'https://meu-gerador-backend.onrender.com';
+
+// ==================================================================
 
 // Configurações principais
 const CONFIG = {
-  // URL base da API
+  // URL base da API (Definida acima)
   API_BASE_URL: API_BASE_URL,
   
   // Nome do projeto
@@ -23,9 +26,9 @@ const CONFIG = {
   APP_VERSION: '1.0.0',
   
   // URLs de redirecionamento
-  FRONTEND_URL: process.env.REACT_APP_FRONTEND_URL || 'https://gerador-prompt-frontend-rc35.vercel.app',
+  FRONTEND_URL: process.env.REACT_APP_FRONTEND_URL || 'http://localhost:3000',
   
-  // Supabase (já configurado no supabaseClient.js, mas mantemos referência)
+  // Supabase
   SUPABASE: {
     URL: process.env.REACT_APP_SUPABASE_URL || 'https://orxwfidvidpuksdfgeip.supabase.co',
     ANON_KEY: process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yeHdmaWR2aWRwdWtzZGZnZWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0OTAzNzEsImV4cCI6MjA3OTA2NjM3MX0.GllkQAAIGFNWNq9NPbvZq-9uNA2pBCjOyKD21hcM0wg'
@@ -72,15 +75,10 @@ const CONFIG = {
   
   // Limites e configurações das ferramentas
   LIMITS: {
-    // TextSummarizer
     MAX_TEXT_LENGTH: 15000,
     MIN_TEXT_LENGTH: 50,
-    
-    // ImageGenerator
     MAX_PROMPT_LENGTH: 500,
     MIN_PROMPT_LENGTH: 10,
-    
-    // General
     MAX_UPLOAD_SIZE: 10 * 1024 * 1024, // 10MB
     REQUEST_TIMEOUT: 30000 // 30 segundos
   },
@@ -101,7 +99,7 @@ const CONFIG = {
     STUDY_MATERIAL: 1,
     COVER_LETTER: 1,
     UPLOAD_DOCUMENT: 1,
-    ASK_DOCUMENT: 0 // Primeira pergunta gratuita após upload
+    ASK_DOCUMENT: 0
   },
   
   // Preços e planos
@@ -125,12 +123,10 @@ const CONFIG = {
     WARNING_COLOR: '#f59e0b'
   },
   
-  // Modo de desenvolvimento
-  IS_DEVELOPMENT: process.env.NODE_ENV === 'development',
-  IS_PRODUCTION: process.env.NODE_ENV === 'production',
+  IS_DEVELOPMENT: true, // Forçamos development aqui também
+  IS_PRODUCTION: false,
   
-  // Logging
-  LOG_LEVEL: process.env.REACT_APP_LOG_LEVEL || 'warn'
+  LOG_LEVEL: 'warn'
 };
 
 // Funções utilitárias
@@ -149,7 +145,6 @@ export const formatCurrency = (value) => {
   }).format(value);
 };
 
-// Validações
 export const validateTextLength = (text, tool) => {
   const maxLength = CONFIG.LIMITS.MAX_TEXT_LENGTH;
   const minLength = CONFIG.LIMITS.MIN_TEXT_LENGTH;
@@ -168,7 +163,7 @@ export const validateTextLength = (text, tool) => {
   return { valid: true, message: '' };
 };
 
-// Versão simplificada para import rápido
+// Exports
 export const API = CONFIG.ENDPOINTS;
 export const LIMITS = CONFIG.LIMITS;
 export const CREDITS = CONFIG.CREDITS_PER_TOOL;
