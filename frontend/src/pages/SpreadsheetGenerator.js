@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { saveAs } from 'file-saver'; // Biblioteca que acabamos de instalar
 import { supabase } from '../supabaseClient';
 import config from '../config';
 import { saveToHistory, TOOL_CONFIGS } from '../utils/saveToHistory';
@@ -7,12 +8,12 @@ import ExemplosSection from '../components/ExemplosSection';
 
 export default function SpreadsheetGenerator() {
   const [description, setDescription] = useState('');
-  const [fileUrl, setFileUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
 
+  // 1. Carregar Usuário
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -21,11 +22,11 @@ export default function SpreadsheetGenerator() {
     getUser();
   }, []);
 
-  // --- NOVO: Ouvinte do Histórico ---
+  // 2. Ouvinte do Histórico (Para carregar prompt antigo)
   useEffect(() => {
     const handleLoadFromHistory = (event) => {
       if (event.detail && event.detail.text) {
-        setDescription(event.detail.text); // Preenche a descrição
+        setDescription(event.detail.text);
         setShowHistory(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -39,38 +40,50 @@ export default function SpreadsheetGenerator() {
 
   const handleGenerate = async (e) => {
     e.preventDefault();
+    if (!description) return;
+    
     setIsLoading(true);
     setError('');
-    setFileUrl('');
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Faça login para continuar.');
+      // Verificar login
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error('Faça login para continuar.');
 
-      const response = await fetch(config.ENDPOINTS.GENERATE_SPREADSHEET, {
+      // --- CONEXÃO COM O BACKEND ---
+      const response = await fetch('config.ENDPOINTS.GENERATE_SPREADSHEET, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          description,
-          user_id: user.id
+          prompt: description, // O backend espera 'prompt', não 'description'
+          user_id: currentUser.id
         }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Erro ao gerar planilha.');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Erro ao gerar planilha.');
+      }
 
-      setFileUrl(data.file_url);
+      // --- DOWNLOAD DO ARQUIVO (BLOB) ---
+      // Diferente do código antigo, agora recebemos o arquivo direto, não um link
+      const blob = await response.blob();
+      saveAs(blob, 'planilha_ia.xlsx');
 
-      // Salvar histórico
+      // --- SALVAR NO HISTÓRICO ---
       await saveToHistory(
-        user,
-        TOOL_CONFIGS.SPREADSHEET,
+        currentUser,
+        TOOL_CONFIGS.SPREADSHEET || 'spreadsheet', // Fallback caso não tenha na config
         description,
-        'Planilha Excel Gerada',
-        { file_url: data.file_url }
+        'Planilha Excel Gerada (Download Direto)',
+        { 
+          downloaded: true,
+          date: new Date().toISOString() 
+        }
       );
 
     } catch (err) {
+      console.error(err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -123,7 +136,7 @@ export default function SpreadsheetGenerator() {
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ex: Uma planilha de controle financeiro pessoal com colunas para data, descrição, categoria, valor entrada e valor saída, com fórmulas de saldo..."
+                placeholder="Ex: Uma planilha de controle financeiro pessoal com colunas para data, descrição, categoria, valor entrada e valor saída..."
                 required
                 style={{
                   width: '100%',
@@ -144,7 +157,7 @@ export default function SpreadsheetGenerator() {
               style={{
                 width: '100%',
                 padding: '15px',
-                background: 'linear-gradient(90deg, #059669 0%, #10b981 100%)',
+                background: isLoading ? '#374151' : 'linear-gradient(90deg, #059669 0%, #10b981 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
@@ -154,48 +167,16 @@ export default function SpreadsheetGenerator() {
                 fontSize: '1.1rem'
               }}
             >
-              {isLoading ? 'Criando Arquivo...' : '📥 Gerar Excel (.xlsx)'}
+              {isLoading ? '🔨 Criando Arquivo...' : '📥 Baixar Excel (.xlsx)'}
             </button>
           </form>
 
           {error && (
             <div style={{ marginTop: '20px', color: '#fca5a5', padding: '10px', backgroundColor: '#450a0a', borderRadius: '8px' }}>
-              {error}
+              ⚠️ {error}
             </div>
           )}
         </div>
-
-        {fileUrl && (
-          <div style={{ 
-            marginTop: '30px', 
-            backgroundColor: '#1f2937', 
-            padding: '30px', 
-            borderRadius: '12px', 
-            border: '1px solid #059669',
-            textAlign: 'center'
-          }}>
-            <h3 style={{ marginBottom: '15px', color: '#34d399' }}>✅ Planilha Criada com Sucesso!</h3>
-            <p style={{ color: '#d1d5db', marginBottom: '25px' }}>Seu arquivo está pronto para download.</p>
-            
-            <a 
-              href={fileUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-block',
-                padding: '15px 30px',
-                backgroundColor: '#059669',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                fontSize: '1.1rem'
-              }}
-            >
-              ⬇️ Baixar Arquivo Excel
-            </a>
-          </div>
-        )}
 
         <ExemplosSection ferramentaId="planilhas" />
       </div>
