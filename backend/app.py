@@ -517,7 +517,7 @@ def correct_essay():
         return jsonify(json.loads(json_text))
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 12. SIMULADOR DE ENTREVISTA
+# 12. SIMULADOR DE ENTREVISTA (ATUALIZADO)
 @app.route('/mock-interview', methods=['POST'])
 def mock_interview():
     if not model: return jsonify({'error': 'Erro modelo'}), 500
@@ -525,20 +525,42 @@ def mock_interview():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
 
-        user_id = data.get('user_id')
-        if user_id:
-            s, m = check_and_deduct_credit(user_id)
-            if not s: return jsonify({'error': m}), 402
+        # ⚠️ CRÉDITOS (Descomente se tiver)
+        # user_id = data.get('user_id')
+        # if user_id:
+        #    s, m = check_and_deduct_credit(user_id)
+        #    if not s: return jsonify({'error': m}), 402
+
+        role = data.get('role')
+        company = data.get('company', 'Empresa Confidencial')
+        experience = data.get('experience', 'junior')
+        description = data.get('description', '')
 
         prompt = f"""
-        Simule entrevista para "{data.get('role')}". Descrição: "{data.get('description')}".
-        SAÍDA JSON: {{ "questions": [{{ "q": "...", "a": "..." }}], "tips": ["..."] }}
+        Você é um Recrutador Sênior na empresa {company}.
+        
+        Objetivo: Criar um roteiro de entrevista técnica e comportamental para a vaga: {role} (Nível {experience}).
+        Descrição da vaga fornecida: "{description}"
+        
+        Gere um JSON com:
+        1. "questions": Uma lista de 5 perguntas (campo "q") e uma breve dica de como responder bem (campo "a").
+        2. "tips": Uma lista de 3 dicas gerais para passar nessa entrevista específica.
+
+        SAÍDA JSON OBRIGATÓRIA: {{ "questions": [{{ "q": "...", "a": "..." }}], "tips": ["..."] }}
         """
+        
         response = model.generate_content(prompt)
+        
+        # Limpeza do JSON (às vezes a IA manda ```json no começo)
         json_text = response.text.replace("```json", "").replace("```", "").strip()
-        if "{" in json_text: json_text = json_text[json_text.find("{"):json_text.rfind("}")+1]
+        if "{" in json_text: 
+            json_text = json_text[json_text.find("{"):json_text.rfind("}")+1]
+            
         return jsonify(json.loads(json_text))
-    except Exception as e: return jsonify({'error': str(e)}), 500
+        
+    except Exception as e: 
+        print(f"Erro Interview: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # 13. GERADOR DE QUIZ E FLASHCARDS
 @app.route('/generate-study-material', methods=['POST'])
