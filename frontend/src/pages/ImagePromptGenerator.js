@@ -1,15 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import config from '../config';
-import { saveToHistory, TOOL_CONFIGS } from '../utils/saveToHistory';
 import HistoryList from '../components/HistoryList';
 import ExemplosSection from '../components/ExemplosSection';
 
+// Lista de estilos para o usuário escolher
+const stylesList = [
+  'Cinematográfico (Padrão)',
+  'Fotorealista / Realista',
+  'Anime / Mangá',
+  'Cyberpunk / Futurista',
+  'Fantasia Medieval / RPG',
+  'Render 3D (Pixar/Disney)',
+  'Pintura a Óleo (Clássico)',
+  'Aquarela',
+  'Terror / Dark',
+  'Retrowave / Anos 80',
+  'Minimalista'
+];
+
 export default function ImagePromptGenerator() {
   const [idea, setIdea] = useState('');
+  const [style, setStyle] = useState(stylesList[0]); // NOVO: Estado do estilo
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  // Removi o 'error' daqui para não dar erro de unused vars
   const [errorMessage, setErrorMessage] = useState(''); 
   const [user, setUser] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -22,18 +36,21 @@ export default function ImagePromptGenerator() {
     getUser();
   }, []);
 
+  // --- OUVINTE DO HISTÓRICO ---
   useEffect(() => {
     const handleLoadFromHistory = (event) => {
       if (event.detail && event.detail.text) {
         setIdea(event.detail.text);
+        // Se o histórico tiver o estilo salvo nos metadados, poderíamos carregar aqui também
+        if (event.detail.metadata?.style) {
+            setStyle(event.detail.metadata.style);
+        }
         setShowHistory(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     };
     window.addEventListener('loadFromHistory', handleLoadFromHistory);
-    return () => {
-      window.removeEventListener('loadFromHistory', handleLoadFromHistory);
-    };
+    return () => window.removeEventListener('loadFromHistory', handleLoadFromHistory);
   }, []);
 
   const handleGenerate = async (e) => {
@@ -46,12 +63,15 @@ export default function ImagePromptGenerator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Faça login para continuar.');
 
-      // Aqui usamos o nome genérico para evitar erro de backend
-      const response = await fetch(config.ENDPOINTS.GENERATE_PROMPT || 'http://localhost:5000/generate-prompt', {
+      // 1. CHAMADA API
+      const endpoint = config.ENDPOINTS.GENERATE_PROMPT || `${config.API_BASE_URL}/generate-prompt`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           idea: idea,
+          style: style, // NOVO: Enviando o estilo escolhido
           user_id: user.id
         }),
       });
@@ -59,15 +79,28 @@ export default function ImagePromptGenerator() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Erro ao gerar prompt.');
 
-      setGeneratedPrompt(data.prompt || data.advanced_prompt);
+      const finalPrompt = data.prompt || data.advanced_prompt;
+      setGeneratedPrompt(finalPrompt);
 
-      await saveToHistory(
-        user,
-        TOOL_CONFIGS.IMAGE_PROMPT,
-        idea,
-        data.prompt || data.advanced_prompt,
-        { length: (data.prompt || '').length }
-      );
+      // 2. SALVAR HISTÓRICO
+      try {
+        await fetch(`${config.API_BASE_URL}/save-history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: user.id,
+            tool_type: 'image-prompt',
+            input_data: idea,
+            output_data: finalPrompt,
+            metadata: { 
+                length: finalPrompt.length,
+                style: style // NOVO: Salvando o estilo no histórico
+            }
+          })
+        });
+      } catch (histError) {
+        console.error("Erro ao salvar histórico:", histError);
+      }
 
     } catch (err) {
       setErrorMessage(err.message);
@@ -84,7 +117,7 @@ export default function ImagePromptGenerator() {
           🎨 Criador de Prompts (Midjourney/DALL-E)
         </h1>
         <p style={{ textAlign: 'center', color: '#9ca3af', marginBottom: '30px' }}>
-          Transforme uma ideia simples em um prompt profissional e detalhado.
+          Transforme ideias simples em prompts profissionais com o estilo que você escolher.
         </p>
 
         {user && (
@@ -113,6 +146,8 @@ export default function ImagePromptGenerator() {
 
         <div style={{ backgroundColor: '#1f2937', padding: '30px', borderRadius: '12px', border: '1px solid #374151' }}>
           <form onSubmit={handleGenerate}>
+            
+            {/* Input da Ideia */}
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', marginBottom: '10px', fontSize: '1.2rem' }}>
                 Sua Ideia (em português):
@@ -135,6 +170,33 @@ export default function ImagePromptGenerator() {
               />
             </div>
 
+            {/* NOVO: Seletor de Estilo */}
+            <div style={{ marginBottom: '25px' }}>
+              <label style={{ display: 'block', marginBottom: '10px', fontSize: '1.1rem' }}>
+                Estilo Artístico:
+              </label>
+              <select
+                value={style}
+                onChange={(e) => setStyle(e.target.value)}
+                style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#111827',
+                    color: 'white',
+                    border: '1px solid #ec4899', // Borda rosa para destacar
+                    fontSize: '1rem',
+                    cursor: 'pointer'
+                }}
+              >
+                {stylesList.map((s, index) => (
+                    <option key={index} value={s} style={{ backgroundColor: '#1f2937' }}>
+                        {s}
+                    </option>
+                ))}
+              </select>
+            </div>
+
             <button
               type="submit"
               disabled={isLoading}
@@ -150,32 +212,47 @@ export default function ImagePromptGenerator() {
                 fontSize: '1.1rem'
               }}
             >
-              {isLoading ? 'Criando Prompt...' : '✨ Gerar Prompt Mágico'}
+              {isLoading ? '✨ Criando Mágica...' : '✨ Gerar Prompt Profissional'}
             </button>
           </form>
 
           {errorMessage && (
             <div style={{ marginTop: '20px', color: '#fca5a5', padding: '10px', backgroundColor: '#450a0a', borderRadius: '8px' }}>
-              {errorMessage}
+              ⚠️ {errorMessage}
             </div>
           )}
 
           {generatedPrompt && (
-            <div style={{ marginTop: '30px', backgroundColor: '#111827', padding: '20px', borderRadius: '8px', border: '1px solid #ec4899' }}>
-              <h3 style={{ color: '#fbcfe8', marginBottom: '10px' }}>Prompt Gerado (Inglês):</h3>
-              <p style={{ color: '#d1d5db', lineHeight: '1.6', marginBottom: '15px' }}>{generatedPrompt}</p>
+            <div style={{ marginTop: '30px', backgroundColor: '#111827', padding: '25px', borderRadius: '8px', border: '1px solid #ec4899' }}>
+              <h3 style={{ color: '#fbcfe8', marginBottom: '15px' }}>
+                🚀 Prompt Gerado (Estilo: {style.split(' ')[0]}):
+              </h3>
+              <div style={{ 
+                color: '#d1d5db', 
+                lineHeight: '1.6', 
+                marginBottom: '20px', 
+                backgroundColor: '#000', 
+                padding: '15px', 
+                borderRadius: '6px',
+                fontFamily: 'monospace',
+                fontSize: '0.95rem'
+              }}>
+                {generatedPrompt}
+              </div>
               <button
                 onClick={() => {navigator.clipboard.writeText(generatedPrompt); alert('Copiado!');}}
                 style={{
-                  padding: '8px 16px',
+                  width: '100%',
+                  padding: '10px',
                   backgroundColor: '#be185d',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
                 }}
               >
-                📋 Copiar
+                📋 Copiar para Midjourney / DALL-E
               </button>
             </div>
           )}

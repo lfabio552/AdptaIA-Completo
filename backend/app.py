@@ -97,23 +97,56 @@ def health():
 
 # --- ROTAS DAS FERRAMENTAS ---
 
-# 1. IMAGEM (GEMINI PROMPT)
+# 1. GERADOR DE PROMPT DE IMAGEM (COM ESTILO)
 @app.route('/generate-prompt', methods=['POST'])
 def generate_prompt():
+    import json
+    import google.generativeai as genai
+
     if not model: return jsonify({'error': 'Erro modelo'}), 500
     try:
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
         
-        user_id = data.get('user_id')
-        if user_id:
-            s, m = check_and_deduct_credit(user_id)
-            if not s: return jsonify({'error': m}), 402
+        # ⚠️ CRÉDITOS (Descomente se tiver)
+        # user_id = data.get('user_id')
+        # if user_id:
+        #     s, m = check_and_deduct_credit(user_id)
+        #     if not s: return jsonify({'error': m}), 402
         
-        prompt = f"Crie prompt imagem: {data.get('idea')}"
+        idea = data.get('idea')
+        # Pega o estilo ou usa o padrão se não vier
+        style = data.get('style', 'Cinematográfico (Padrão)')
+
+        if not idea: return jsonify({'error': 'A ideia é obrigatória'}), 400
+
+        # Prompt de Especialista com Estilo Forçado
+        prompt = f"""
+        Atue como um Engenheiro de Prompts Especialista em Midjourney v6 e DALL-E 3.
+        Sua missão: Transformar a ideia do usuário em UM prompt profissional, rico e detalhado (em Inglês).
+        
+        Ideia do Usuário: "{idea}"
+        Estilo Visual Obrigatório: "{style}"
+        
+        Regras de Ouro:
+        1. Escreva APENAS o prompt final em Inglês. Não coloque introduções.
+        2. O estilo visual "{style}" deve ser o foco principal da estética.
+        3. Estrutura sugerida: [Estilo Artístico: {style}] + [Sujeito Principal] + [Detalhes Visuais/Ação] + [Ambiente] + [Iluminação/Atmosfera] + [Parâmetros Técnicos].
+        4. Use palavras-chave técnicas poderosas que combinem com o estilo escolhido (ex: se for 'Fotorealista', use '8k, raw photo'; se for 'Anime', use 'studio ghibli style, vibrant colors').
+        
+        Gere APENAS O TEXTO DO PROMPT EM INGLÊS.
+        """
+        
         response = model.generate_content(prompt)
-        return jsonify({'advanced_prompt': response.text})
-    except Exception as e: return jsonify({'error': str(e)}), 500
+        
+        return jsonify({
+            'prompt': response.text.strip(),
+            'advanced_prompt': response.text.strip()
+        })
+        
+    except Exception as e: 
+        print(f"Erro Prompt Imagem: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # 2. VEO 3 & SORA 2 (CORRIGIDO)
 @app.route('/generate-veo3-prompt', methods=['POST'])
