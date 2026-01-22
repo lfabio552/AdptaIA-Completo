@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import config from '../config';
-import { saveToHistory, TOOL_CONFIGS } from '../utils/saveToHistory';
 import HistoryList from '../components/HistoryList';
 import ExemplosSection from '../components/ExemplosSection';
 
 export default function CorporateTranslator() {
   const [text, setText] = useState('');
-  const [tone, setTone] = useState('formal');
-  const [targetLang, setTargetLang] = useState('english');
+  const [tone, setTone] = useState('Profissional / Formal');
+  const [targetLang, setTargetLang] = useState('Português (Melhorar Texto)');
   const [translatedText, setTranslatedText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,16 +26,17 @@ export default function CorporateTranslator() {
   useEffect(() => {
     const handleLoadFromHistory = (event) => {
       if (event.detail && event.detail.text) {
-        setText(event.detail.text); // Preenche o texto original
+        setText(event.detail.text);
+        if (event.detail.metadata) {
+            if (event.detail.metadata.tone) setTone(event.detail.metadata.tone);
+            if (event.detail.metadata.lang) setTargetLang(event.detail.metadata.lang);
+        }
         setShowHistory(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     };
-
     window.addEventListener('loadFromHistory', handleLoadFromHistory);
-    return () => {
-      window.removeEventListener('loadFromHistory', handleLoadFromHistory);
-    };
+    return () => window.removeEventListener('loadFromHistory', handleLoadFromHistory);
   }, []);
 
   const handleTranslate = async (e) => {
@@ -49,13 +49,19 @@ export default function CorporateTranslator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Faça login para utilizar o tradutor.');
 
-      const response = await fetch(config.ENDPOINTS.TRANSLATE_CORPORATE, {
+      // 1. CHAMADA API
+      // Tenta pegar do config, ou monta a URL padrão
+      const endpoint = config.ENDPOINTS.CORPORATE_TRANSLATOR || 
+                       config.ENDPOINTS.TRANSLATE_CORPORATE || 
+                       `${config.API_BASE_URL}/corporate-translator`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text,
           tone,
-          target_lang: targetLang,
+          target_lang: targetLang, // Envia o idioma para o backend
           user_id: user.id
         }),
       });
@@ -63,16 +69,27 @@ export default function CorporateTranslator() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Erro ao traduzir.');
 
-      setTranslatedText(data.translation);
+      setTranslatedText(data.translated_text || data.translation);
 
-      // Salvar no Histórico
-      await saveToHistory(
-        user,
-        TOOL_CONFIGS.CORPORATE_TRANSLATE,
-        text, // Texto original como prompt
-        data.translation,
-        { tone, target_lang: targetLang }
-      );
+      // 2. SALVAR HISTÓRICO (MANUAL E SEGURO)
+      try {
+        await fetch(`${config.API_BASE_URL}/save-history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: user.id,
+            tool_type: 'translator', // Backend converte para "Tradutor Corporativo"
+            input_data: text,
+            output_data: data.translated_text || data.translation,
+            metadata: { 
+                tone: tone, 
+                lang: targetLang 
+            }
+          })
+        });
+      } catch (histError) {
+        console.error("Erro ao salvar histórico:", histError);
+      }
 
     } catch (err) {
       setError(err.message);
@@ -97,7 +114,6 @@ export default function CorporateTranslator() {
           Transforme rascunhos em e-mails executivos perfeitos ou traduza com terminologia de negócios.
         </p>
 
-        {/* Botão Histórico */}
         {user && (
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <button
@@ -116,10 +132,9 @@ export default function CorporateTranslator() {
           </div>
         )}
 
-        {/* Lista Histórico */}
         {showHistory && user && (
           <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#1f2937', borderRadius: '10px' }}>
-            <HistoryList user={user} toolType="translation" />
+            <HistoryList user={user} toolType="translator" />
           </div>
         )}
 
@@ -156,10 +171,12 @@ export default function CorporateTranslator() {
                     onChange={(e) => setTone(e.target.value)}
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#111827', color: 'white', border: '1px solid #4b5563' }}
                   >
-                    <option value="formal">Muito Formal (Executivo)</option>
-                    <option value="polite">Polido e Amigável</option>
-                    <option value="persuasive">Persuasivo (Vendas)</option>
-                    <option value="assertive">Assertivo/Direto</option>
+                    <option>Profissional / Formal</option>
+                    <option>Liderança / Executivo</option>
+                    <option>Diplomático / Polido</option>
+                    <option>Persuasivo / Vendas</option>
+                    <option>Direto / Objetivo</option>
+                    <option>Amigável / Colaborativo</option>
                   </select>
                 </div>
                 <div>
@@ -169,11 +186,12 @@ export default function CorporateTranslator() {
                     onChange={(e) => setTargetLang(e.target.value)}
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#111827', color: 'white', border: '1px solid #4b5563' }}
                   >
-                    <option value="portuguese">Português (Melhorar Texto)</option>
-                    <option value="english">Inglês (Business English)</option>
-                    <option value="spanish">Espanhol</option>
-                    <option value="french">Francês</option>
-                    <option value="mandarin">Mandarim</option>
+                    <option>Português (Melhorar Texto)</option>
+                    <option>Inglês (Business English)</option>
+                    <option>Espanhol (Corporativo)</option>
+                    <option>Francês</option>
+                    <option>Mandarim</option>
+                    <option>Alemão</option>
                   </select>
                 </div>
               </div>
@@ -203,7 +221,7 @@ export default function CorporateTranslator() {
           {/* Lado Direito: Output */}
           <div style={{ backgroundColor: '#1f2937', padding: '25px', borderRadius: '12px', border: '1px solid #374151' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <h3 style={{ margin: 0 }}>Resultado Profissional:</h3>
+              <h3 style={{ margin: 0, color: '#60a5fa' }}>Resultado Profissional:</h3>
               {translatedText && (
                 <button
                   onClick={copyToClipboard}
@@ -214,10 +232,11 @@ export default function CorporateTranslator() {
                     border: 'none',
                     borderRadius: '6px',
                     cursor: 'pointer',
-                    fontSize: '0.9rem'
+                    fontSize: '0.9rem',
+                    fontWeight: 'bold'
                   }}
                 >
-                  Copiar
+                  📋 Copiar
                 </button>
               )}
             </div>
@@ -232,7 +251,8 @@ export default function CorporateTranslator() {
               whiteSpace: 'pre-wrap',
               color: translatedText ? '#d1d5db' : '#6b7280',
               fontFamily: 'Georgia, serif', // Fonte mais "documento"
-              lineHeight: '1.6'
+              lineHeight: '1.6',
+              fontSize: '1.05rem'
             }}>
               {translatedText || 'O texto refinado ou traduzido aparecerá aqui...'}
             </div>

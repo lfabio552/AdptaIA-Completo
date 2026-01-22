@@ -458,22 +458,43 @@ def ask_document():
         return jsonify({'answer': resp.text})
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 9. TRADUTOR CORPORATIVO
+# 9. TRADUTOR CORPORATIVO (COM IDIOMAS)
 @app.route('/corporate-translator', methods=['POST'])
 def corporate_translator():
+    import json
+    import google.generativeai as genai
+
     if not model: return jsonify({'error': 'Erro modelo'}), 500
     try:
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
 
-        user_id = data.get('user_id')
-        if user_id:
-            s, m = check_and_deduct_credit(user_id)
-            if not s: return jsonify({'error': m}), 402
+        # ⚠️ CRÉDITOS (Descomente se tiver)
+        # user_id = data.get('user_id')
+        # if user_id:
+        #     s, m = check_and_deduct_credit(user_id)
+        #     if not s: return jsonify({'error': m}), 402
         
-        prompt = f"Reescreva corporativamente: {data.get('text')}. Tom: {data.get('tone')}"
+        text = data.get('text')
+        tone = data.get('tone', 'Profissional')
+        # Pega o idioma ou assume Português se não vier
+        target_lang = data.get('target_lang', 'Português')
+
+        prompt = f"""
+        Atue como um Especialista em Comunicação Corporativa Global.
+        
+        Sua tarefa: Reescrever e Traduzir o texto abaixo.
+        1. Tom de voz: {tone}
+        2. Idioma de Saída: {target_lang}
+        
+        Texto Original: "{text}"
+        
+        Saída: Apenas o texto reescrito/traduzido, sem aspas e sem explicações.
+        """
+        
         resp = model.generate_content(prompt)
-        return jsonify({'translated_text': resp.text})
+        return jsonify({'translated_text': resp.text.strip()})
+        
     except Exception as e: return jsonify({'error': str(e)}), 500
 
 # 10. SOCIAL MEDIA GENERATOR (BLINDADO)
