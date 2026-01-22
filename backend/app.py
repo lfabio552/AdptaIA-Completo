@@ -9,7 +9,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from io import BytesIO
 from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
@@ -17,9 +17,6 @@ from supabase import create_client, Client
 from pytube import YouTube
 import xml.etree.ElementTree as ET
 from docx import Document
-from docx.shared import Cm, Pt
-from openpyxl import Workbook
-from openpyxl.styles import PatternFill, Font, Alignment
 from pypdf import PdfReader 
 
 # Carrega variáveis do .env
@@ -48,7 +45,8 @@ else:
 
 try:
     genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    # Ajustado para a versão estável atual. Se tiver acesso ao 2.0, mude aqui.
+    model = genai.GenerativeModel('gemini-2.5-flash') 
     print("Modelo Gemini configurado com sucesso!")
 except Exception as e:
     print(f"Erro ao configurar o modelo Gemini: {e}")
@@ -99,7 +97,7 @@ def health():
 
 # --- ROTAS DAS FERRAMENTAS ---
 
-# 1. IMAGEM
+# 1. IMAGEM (GEMINI PROMPT)
 @app.route('/generate-prompt', methods=['POST'])
 def generate_prompt():
     if not model: return jsonify({'error': 'Erro modelo'}), 500
@@ -123,7 +121,6 @@ def generate_video_prompt():
     if not model: return jsonify({'error': 'Erro modelo'}), 500
     
     try:
-        # Pega os dados com segurança
         data = request.get_json(force=True, silent=True)
         if not data and request.data:
             try:
@@ -133,16 +130,14 @@ def generate_video_prompt():
         
         if not data: data = {}
 
-        # ⚠️ CRÉDITOS: Se você tiver a função check_and_deduct_credit no app.py, 
-        # pode descomentar as linhas abaixo. Se não tiver, deixe comentado para não dar erro 500.
-        user_id = data.get('user_id')
+        # ⚠️ CRÉDITOS: Descomente se quiser cobrar créditos aqui
+        # user_id = data.get('user_id')
         # if user_id:
         #     s, m = check_and_deduct_credit(user_id)
         #     if not s: return jsonify({'error': m}), 402
 
         target_model = data.get('model', 'Veo 3')
         
-        # 🟢 CORREÇÃO 1: Aceitar 'idea' (do frontend) OU 'scene'
         scene = data.get('scene') or data.get('idea')
         
         if not scene:
@@ -171,14 +166,13 @@ def generate_video_prompt():
         
         response = model.generate_content(prompt)
         
-        # 🟢 CORREÇÃO 2: Devolver como 'prompt' para o frontend entender
         return jsonify({'prompt': response.text})
 
     except Exception as e:
-        print(f"Erro Veo3: {e}") # Ajuda no debug
+        print(f"Erro Veo3: {e}") 
         return jsonify({'error': str(e)}), 500
 
-# 3. RESUMIDOR
+# 3. RESUMIDOR YOUTUBE
 @app.route('/summarize-video', methods=['POST'])
 def summarize_video():
     if not model: return jsonify({'error': 'Erro modelo'}), 500
@@ -191,11 +185,12 @@ def summarize_video():
             if not s: return jsonify({'error': m}), 402
 
         yt = YouTube(data.get('url'))
+        # Tenta pegar legendas em várias línguas
         caption = yt.captions.get_by_language_code('pt')
         if not caption: caption = yt.captions.get_by_language_code('en')
         if not caption: caption = yt.captions.get_by_language_code('a.pt') 
         
-        if not caption: return jsonify({'error': 'Sem legendas.'}), 400
+        if not caption: return jsonify({'error': 'Sem legendas disponíveis neste vídeo.'}), 400
         
         xml = caption.xml_captions
         root = ET.fromstring(xml)
@@ -224,7 +219,7 @@ def format_abnt():
         return jsonify({'formatted_text': response.text})
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 4.1. RESUMIDOR DE TEXTOS LONGOS (Substitui o VideoSummarizer problemático)
+# 4.1. RESUMIDOR DE TEXTOS LONGOS
 @app.route('/summarize-text', methods=['POST'])
 def summarize_text():
     if not model:
@@ -245,8 +240,7 @@ def summarize_text():
         if len(text) < 50:
             return jsonify({'error': 'Texto muito curto. Mínimo 50 caracteres.'}), 400
         
-        # Limitar tamanho para não exceder tokens do Gemini
-        text_limitado = text[:15000]  # 15k caracteres é seguro
+        text_limitado = text[:15000] 
         
         prompt = f"""
         Resuma o seguinte texto de forma clara e concisa.
@@ -280,14 +274,13 @@ def download_docx():
         return send_file(f, as_attachment=True, download_name='doc.docx', mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 6. PLANILHAS (VERSÃO FLEXÍVEL E GARANTIDA)
+# 6. PLANILHAS (VERSÃO CORRIGIDA E ÚNICA)
 @app.route('/generate-spreadsheet', methods=['POST'])
 def generate_spreadsheet():
     if not model: 
         return jsonify({'error': 'Erro: Chave API do Gemini não configurada'}), 500
     
     try:
-        # Tenta pegar o JSON de várias formas para garantir
         data = request.get_json(force=True, silent=True)
         if not data:
             data = json.loads(request.data.decode('utf-8'))
@@ -295,16 +288,14 @@ def generate_spreadsheet():
         if isinstance(data, str): 
             data = json.loads(data)
 
-        # ⚠️ Se você tiver a função de créditos, descomente abaixo. 
-        # Se não tiver, deixei comentado para não dar erro.
-        user_id = data.get('user_id')
+        # ⚠️ CRÉDITOS: Descomente se quiser cobrar créditos
+        # user_id = data.get('user_id')
         # if user_id:
         #    s, m = check_and_deduct_credit(user_id)
         #    if not s: return jsonify({'error': m}), 402
 
-        print(f"Gerando planilha para: {data.get('description')}") # Log para debug
+        print(f"Gerando planilha para: {data.get('description')}")
 
-        # Prompt OTIMIZADO para sempre retornar algo útil
         prompt = f"""
         Você é um especialista em Excel. Crie o conteúdo de uma planilha para:
         "{data.get('description')}"
@@ -330,11 +321,10 @@ def generate_spreadsheet():
         ws = wb.active
         ws.title = "Planilha Gerada"
         
-        # Limpeza extra caso a IA mande markdown
         clean_text = response.text.replace('```', '').strip()
         lines = clean_text.split('\n')
         
-        data_found = False # Flag para saber se achamos dados
+        data_found = False
         
         for line in lines:
             if '|' in line:
@@ -343,24 +333,20 @@ def generate_spreadsheet():
                     cell = parts[0].strip()
                     value = "|".join(parts[1:]).strip()
                     
-                    # Verifica se a célula é válida (Ex: A1, B2)
                     if re.match(r'^[A-Z]{1,3}[0-9]{1,6}$', cell):
                         data_found = True
                         try:
-                            # Tenta converter números (troca ponto por virgula se precisar, ou vice versa)
                             if value.replace('.', '', 1).isdigit():
                                 value = float(value)
                         except: pass
                         
                         try:
                             ws[cell] = value
-                            # Aplica estilo se for título (Maiúsculo e texto)
                             if isinstance(value, str) and value.isupper() and len(value) > 2:
                                 ws[cell].font = Font(bold=True)
                                 ws[cell].fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
                         except: pass
 
-        # SE A IA FALHOU E A PLANILHA ESTÁ VAZIA, CRIAMOS UMA DE EMERGÊNCIA
         if not data_found:
             ws['A1'] = "ERRO NA GERAÇÃO AUTOMÁTICA"
             ws['A2'] = "A IA não retornou dados no formato correto."
@@ -369,123 +355,10 @@ def generate_spreadsheet():
             ws.column_dimensions['A'].width = 30
             ws.column_dimensions['B'].width = 50
 
-        # Ajuste largura
         ws.column_dimensions['A'].width = 20
         ws.column_dimensions['B'].width = 30
         ws.column_dimensions['C'].width = 15
 
-        # Prepara o arquivo para envio
-        f = io.BytesIO()
-        wb.save(f)
-        f.seek(0)
-        
-        return send_file(
-            f, 
-            as_attachment=True, 
-            download_name='planilha_ia.xlsx', 
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-
-    except Exception as e:
-        print(f"❌ ERRO PLANILHA: {e}")
-        return jsonify({'error': f"Erro ao gerar: {str(e)}"}), 500
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)@app.route('/generate-spreadsheet', methods=['POST'])
-def generate_spreadsheet():
-    if not model: 
-        return jsonify({'error': 'Erro: Chave API do Gemini não configurada'}), 500
-    
-    try:
-        # Tenta pegar o JSON de várias formas para garantir
-        data = request.get_json(force=True, silent=True)
-        if not data:
-            data = json.loads(request.data.decode('utf-8'))
-            
-        if isinstance(data, str): 
-            data = json.loads(data)
-
-        # ⚠️ Se você tiver a função de créditos, descomente abaixo. 
-        # Se não tiver, deixei comentado para não dar erro.
-        user_id = data.get('user_id')
-        # if user_id:
-        #    s, m = check_and_deduct_credit(user_id)
-        #    if not s: return jsonify({'error': m}), 402
-
-        print(f"Gerando planilha para: {data.get('description')}") # Log para debug
-
-        # Prompt OTIMIZADO para sempre retornar algo útil
-        prompt = f"""
-        Você é um especialista em Excel. Crie o conteúdo de uma planilha para:
-        "{data.get('description')}"
-
-        IMPORTANTE: Responda EXATAMENTE neste formato de lista (Célula|Valor):
-        
-        A1|TÍTULO DA PLANILHA
-        A3|Data
-        B3|Descrição
-        C3|Valor
-        A4|01/01/2024
-        B4|Exemplo de Item
-        C4|100.00
-        
-        Gere pelo menos 5 linhas de dados de exemplo para a planilha não ficar vazia.
-        Use títulos em CAIXA ALTA.
-        Não use markdown (```), apenas o texto cru.
-        """
-        
-        response = model.generate_content(prompt)
-        
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Planilha Gerada"
-        
-        # Limpeza extra caso a IA mande markdown
-        clean_text = response.text.replace('```', '').strip()
-        lines = clean_text.split('\n')
-        
-        data_found = False # Flag para saber se achamos dados
-        
-        for line in lines:
-            if '|' in line:
-                parts = line.split('|')
-                if len(parts) >= 2:
-                    cell = parts[0].strip()
-                    value = "|".join(parts[1:]).strip()
-                    
-                    # Verifica se a célula é válida (Ex: A1, B2)
-                    if re.match(r'^[A-Z]{1,3}[0-9]{1,6}$', cell):
-                        data_found = True
-                        try:
-                            # Tenta converter números (troca ponto por virgula se precisar, ou vice versa)
-                            if value.replace('.', '', 1).isdigit():
-                                value = float(value)
-                        except: pass
-                        
-                        try:
-                            ws[cell] = value
-                            # Aplica estilo se for título (Maiúsculo e texto)
-                            if isinstance(value, str) and value.isupper() and len(value) > 2:
-                                ws[cell].font = Font(bold=True)
-                                ws[cell].fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
-                        except: pass
-
-        # SE A IA FALHOU E A PLANILHA ESTÁ VAZIA, CRIAMOS UMA DE EMERGÊNCIA
-        if not data_found:
-            ws['A1'] = "ERRO NA GERAÇÃO AUTOMÁTICA"
-            ws['A2'] = "A IA não retornou dados no formato correto."
-            ws['A3'] = "Descrição do seu pedido:"
-            ws['B3'] = data.get('description')
-            ws.column_dimensions['A'].width = 30
-            ws.column_dimensions['B'].width = 50
-
-        # Ajuste largura
-        ws.column_dimensions['A'].width = 20
-        ws.column_dimensions['B'].width = 30
-        ws.column_dimensions['C'].width = 15
-
-        # Prepara o arquivo para envio
         f = io.BytesIO()
         wb.save(f)
         f.seek(0)
@@ -570,30 +443,55 @@ def corporate_translator():
         return jsonify({'translated_text': resp.text})
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 10. SOCIAL MEDIA GENERATOR
-@app.route('/generate-social-media', methods=['POST'])
+# 10. SOCIAL MEDIA GENERATOR (BLINDADO)
+@app.route('/generate-social-media', methods=['POST', 'OPTIONS'])
+@cross_origin() # <--- Força a permissão do CORS nesta rota
 def generate_social_media():
+    import json
+    import google.generativeai as genai 
+
     if not model: return jsonify({'error': 'Erro modelo'}), 500
+    
     try:
-        data = request.get_json(force=True)
-        if isinstance(data, str): data = json.loads(data)
-
-        user_id = data.get('user_id')
-        if user_id:
-            s, m = check_and_deduct_credit(user_id)
-            if not s: return jsonify({'error': m}), 402
-
-        text = data.get('text')
-        prompt = f"""
-        Crie 3 posts (Instagram, LinkedIn, Twitter) sobre: "{text}".
-        SAÍDA JSON OBRIGATÓRIA: {{ "instagram": "...", "linkedin": "...", "twitter": "..." }}
-        """
-        response = model.generate_content(prompt, generation_config=genai.types.GenerationConfig(temperature=0.9))
+        data = request.get_json(force=True, silent=True)
+        if not data and request.data:
+            try:
+                data = json.loads(request.data.decode('utf-8'))
+            except:
+                pass
         
-        json_text = response.text.replace("```json", "").replace("```", "").strip()
-        if "{" in json_text: json_text = json_text[json_text.find("{"):json_text.rfind("}")+1]
-        return jsonify(json.loads(json_text))
+        if not data: data = {}
+
+        # Pega os dados
+        topic = data.get('topic') or data.get('text')
+        platform = data.get('platform', 'Instagram')
+        tone = data.get('tone', 'Profissional')
+
+        if not topic:
+            return jsonify({'error': 'O tópico do post é obrigatório'}), 400
+
+        prompt = f"""
+        Atue como um Especialista em Social Media.
+        Crie UM post para a rede social: {platform}.
+        
+        Assunto: "{topic}"
+        Tom de voz: {tone}
+        
+        Regras:
+        - Use formatação adequada (quebra de linha, emojis).
+        - Se for Instagram, use hashtags.
+        - Se for LinkedIn, seja mais corporativo.
+        - Se for Twitter, seja breve.
+        
+        Gere APENAS o texto do conteúdo.
+        """
+        
+        response = model.generate_content(prompt)
+        
+        return jsonify({'content': response.text.strip()})
+
     except Exception as e:
+        print(f"❌ ERRO SOCIAL MEDIA: {e}") 
         return jsonify({'error': str(e)}), 500
 
 # 11. CORRETOR DE REDAÇÃO
@@ -693,9 +591,7 @@ def generate_cover_letter():
         return jsonify({'cover_letter': response.text})
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 15. GERADOR DE IMAGENS (Stable Diffusion via Replicate)
-import replicate  # ADICIONE ESTE IMPORT NO TOPO DO ARQUIVO
-
+# 15. GERADOR DE IMAGENS (Replicate)
 @app.route('/generate-image', methods=['POST'])
 def generate_image():
     try:
@@ -703,7 +599,6 @@ def generate_image():
         if isinstance(data, str):
             data = json.loads(data)
 
-        # 1. Verificar usuário e créditos
         user_id = data.get('user_id')
         if user_id:
             success, message = check_and_deduct_credit(user_id)
@@ -714,16 +609,14 @@ def generate_image():
         if not prompt or len(prompt) < 10:
             return jsonify({'error': 'Prompt muito curto (mínimo 10 caracteres).'}), 400
 
-        # 2. Configurar modelo (SDXL é o melhor custo-benefício)
-        model = "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b"
+        model_id = "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b"
         
-        # 3. Chamar Replicate API
         output = replicate.run(
-            model,
+            model_id,
             input={
                 "prompt": prompt,
                 "num_outputs": 1,
-                "num_inference_steps": 30,  # Balance entre qualidade/velocidade
+                "num_inference_steps": 30,
                 "guidance_scale": 7.5,
                 "width": 1024,
                 "height": 1024,
@@ -732,20 +625,18 @@ def generate_image():
             }
         )
 
-        # 4. Retornar URL da imagem
         image_url = output[0] if isinstance(output, list) else output
         
-        # 5. (OPCIONAL) Salvar no banco para histórico
         if supabase and user_id:
             try:
                 supabase.table('image_history').insert({
                     'user_id': user_id,
-                    'prompt': prompt[:500],  # Limitar tamanho
+                    'prompt': prompt[:500],
                     'image_url': image_url,
                     'created_at': 'now()'
                 }).execute()
             except Exception as e:
-                print(f"Erro ao salvar histórico: {e}")
+                print(f"Erro ao salvar histórico imagem: {e}")
 
         return jsonify({
             'success': True,
@@ -753,15 +644,11 @@ def generate_image():
             'prompt': prompt
         })
 
-    except replicate.exceptions.ModelError as e:
-        return jsonify({'error': f'Erro no modelo: {str(e)}'}), 500
-    except replicate.exceptions.ReplicateError as e:
-        return jsonify({'error': f'Erro na API: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
 # ============================================
-# HISTÓRICO DE ATIVIDADES - NOVAS ROTAS
+# HISTÓRICO DE ATIVIDADES
 # ============================================
 
 # 19. SALVAR ATIVIDADE NO HISTÓRICO
@@ -776,11 +663,9 @@ def save_history():
         output_data = data.get('output_data')
         metadata = data.get('metadata', {})
 
-        # Verificação básica
         if not all([user_id, tool_type, input_data]):
             return jsonify({"error": "Dados incompletos"}), 400
 
-        # Tenta salvar no Supabase
         response = supabase.table('history').insert({
             "user_id": user_id,
             "tool_type": tool_type,
@@ -793,7 +678,7 @@ def save_history():
         return jsonify({"message": "Histórico salvo!", "data": response.data}), 200
 
     except Exception as e:
-        print(f"❌ ERRO AO SALVAR HISTÓRICO: {str(e)}") # Isso vai aparecer no seu terminal
+        print(f"❌ ERRO AO SALVAR HISTÓRICO: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 # 20. BUSCAR HISTÓRICO DO USUÁRIO
@@ -806,25 +691,21 @@ def get_history():
         if not user_id:
             return jsonify({'error': 'user_id obrigatório'}), 400
         
-        # Query com filtros opcionais
         query = supabase.table('user_history')\
             .select('*')\
             .eq('user_id', user_id)
         
-        # Filtrar por tipo de ferramenta (opcional)
         if data.get('tool_type'):
             query = query.eq('tool_type', data['tool_type'])
         
-        # Filtrar por data (opcional)
         if data.get('start_date'):
             query = query.gte('created_at', data['start_date'])
         if data.get('end_date'):
             query = query.lte('created_at', data['end_date'])
         
-        # Ordenar e limitar
         response = query.order('created_at', desc=True)\
-                       .limit(data.get('limit', 100))\
-                       .execute()
+                        .limit(data.get('limit', 100))\
+                        .execute()
         
         return jsonify({
             'success': True,

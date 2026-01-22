@@ -49,7 +49,7 @@ export default function SocialMediaGenerator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Faça login para continuar.');
 
-      const response = await fetch(config.ENDPOINTS.GENERATE_SOCIAL, {
+      const response = await fetch(config.ENDPOINTS.GENERATE_SOCIAL_MEDIA, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
