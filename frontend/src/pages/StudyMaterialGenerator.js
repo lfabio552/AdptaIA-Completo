@@ -48,7 +48,7 @@ export default function StudyMaterialGenerator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Faça login para gerar materiais.');
 
-      const response = await fetch(config.ENDPOINTS.GENERATE_STUDY_MATERIAL || 'http://localhost:5000/generate-study-material', {
+      const response = await fetch(config.ENDPOINTS.GENERATE_STUDY_MATERIAL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -63,14 +63,24 @@ export default function StudyMaterialGenerator() {
 
       setMaterial(data.material);
 
-      // Salvar no Histórico (Assumindo que você criou a config 'STUDY_MATERIAL', senão usamos um genérico)
-      await saveToHistory(
-        user,
-        TOOL_CONFIGS.STUDY_MATERIAL || { type: 'study', name: 'Material de Estudo', credits: 1 },
-        topic,
-        data.material,
-        { level }
-      );
+      // --- SALVAR HISTÓRICO (MANUAL E DIRETO) ---
+      try {
+        await fetch(`${config.API_BASE_URL}/save-history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: user.id,        // OBRIGATÓRIO
+            tool_type: 'study',      // OBRIGATÓRIO
+            input_data: topic,       // OBRIGATÓRIO
+            title: topic,            // Opcional (mas bom ter)
+            output_data: data.material,
+            metadata: { level: level }
+          })
+        });
+      } catch (histError) {
+        console.error("Erro ao salvar histórico:", histError);
+      }
+      // ------------------------------------------
 
     } catch (err) {
       setError(err.message);

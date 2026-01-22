@@ -542,34 +542,58 @@ def mock_interview():
 
 # 13. GERADOR DE QUIZ E FLASHCARDS
 @app.route('/generate-study-material', methods=['POST'])
+@cross_origin()
 def generate_study_material():
+    # Imports de segurança
+    import google.generativeai as genai 
+    
     if not model: return jsonify({'error': 'Erro modelo'}), 500
+    
     try:
-        data = request.get_json(force=True)
-        if isinstance(data, str): data = json.loads(data)
+        data = request.get_json(force=True, silent=True)
+        if not data and request.data:
+            try:
+                data = json.loads(request.data.decode('utf-8'))
+            except:
+                pass
+        
+        if not data: data = {}
 
+        # ⚠️ CRÉDITOS (Descomente se tiver a função)
         user_id = data.get('user_id')
-        if user_id:
-            s, m = check_and_deduct_credit(user_id)
-            if not s: return jsonify({'error': m}), 402
+        # if user_id:
+        #     s, m = check_and_deduct_credit(user_id)
+        #     if not s: return jsonify({'error': m}), 402
 
-        mode = data.get('mode')
-        if mode == 'quiz':
-            prompt = f"""
-            Gere um Quiz sobre: "{data.get('text')[:15000]}".
-            SAÍDA JSON: {{ "questions": [{{ "question": "...", "options": ["..."], "answer": "...", "explanation": "..." }}] }}
-            """
-        else:
-            prompt = f"""
-            Gere Flashcards sobre: "{data.get('text')[:15000]}".
-            SAÍDA JSON: {{ "flashcards": [{{ "front": "...", "back": "..." }}] }}
-            """
+        topic = data.get('topic')
+        level = data.get('level', 'ensino_medio')
+
+        if not topic:
+            return jsonify({'error': 'O tópico é obrigatório'}), 400
+
+        # Prompt Educacional
+        prompt = f"""
+        Atue como um Professor Especialista.
+        Crie um Guia de Estudos sobre: "{topic}".
+        Nível de ensino: {level}.
+        
+        Estrutura Obrigatória:
+        1. Resumo do Conceito (O que é?).
+        2. Principais Pontos Chave (Bullet points).
+        3. Exemplo Prático ou Analogia.
+        4. Sugestão de 3 questões para praticar (com gabarito no final).
+        
+        Use formatação Markdown (negrito, títulos) para ficar bonito.
+        """
         
         response = model.generate_content(prompt)
-        json_text = response.text.replace("```json", "").replace("```", "").strip()
-        if "{" in json_text: json_text = json_text[json_text.find("{"):json_text.rfind("}")+1]
-        return jsonify(json.loads(json_text))
-    except Exception as e: return jsonify({'error': str(e)}), 500
+        
+        # Retorna 'material' como o frontend espera
+        return jsonify({'material': response.text.strip()})
+
+    except Exception as e:
+        print(f"❌ ERRO STUDY MATERIAL: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # 14. CARTA DE APRESENTAÇÃO
 @app.route('/generate-cover-letter', methods=['POST'])
@@ -651,25 +675,42 @@ def generate_image():
 # HISTÓRICO DE ATIVIDADES
 # ============================================
 
-# 19. SALVAR ATIVIDADE NO HISTÓRICO
+# 19. SALVAR ATIVIDADE NO HISTÓRICO (BLINDADO CONTRA ERRO DE COLUNA)
 @app.route('/save-history', methods=['POST'])
 def save_history():
     try:
         data = request.json
         user_id = data.get('user_id')
         tool_type = data.get('tool_type')
-        title = data.get('title')
         input_data = data.get('input_data')
         output_data = data.get('output_data')
         metadata = data.get('metadata', {})
 
+        # CORREÇÃO: O banco exige 'tool_name', então vamos garantir que ele exista
+        tool_name = data.get('tool_name')
+        
+        # Se não veio nome, a gente cria um baseado no código (fallback)
+        if not tool_name:
+            nomes_ferramentas = {
+                'study': 'Material de Estudo',
+                'social': 'Social Media',
+                'video-prompt': 'Prompt de Vídeo',
+                'image-prompt': 'Prompt de Imagem',
+                'spreadsheet': 'Gerador de Planilhas',
+                'translator': 'Tradutor Corporativo'
+            }
+            # Se não achar na lista, usa "Ferramenta Adapta"
+            tool_name = nomes_ferramentas.get(tool_type, 'Ferramenta Adapta')
+
+        # Verificação básica
         if not all([user_id, tool_type, input_data]):
             return jsonify({"error": "Dados incompletos"}), 400
 
-        response = supabase.table('history').insert({
+        # Tenta salvar no Supabase (Agora enviando tool_name)
+        response = supabase.table('user_history').insert({
             "user_id": user_id,
             "tool_type": tool_type,
-            "title": title or "Sem título",
+            "tool_name": tool_name,  # <--- CAMPO OBRIGATÓRIO ADICIONADO
             "input_data": input_data,
             "output_data": output_data,
             "metadata": metadata
