@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { saveAs } from 'file-saver'; // Biblioteca que acabamos de instalar
+import { saveAs } from 'file-saver';
 import { supabase } from '../supabaseClient';
 import config from '../config';
-import { saveToHistory, TOOL_CONFIGS } from '../utils/saveToHistory';
 import HistoryList from '../components/HistoryList';
 import ExemplosSection from '../components/ExemplosSection';
 
@@ -22,7 +21,7 @@ export default function SpreadsheetGenerator() {
     getUser();
   }, []);
 
-  // 2. Ouvinte do Histórico (Para carregar prompt antigo)
+  // 2. Ouvinte do Histórico
   useEffect(() => {
     const handleLoadFromHistory = (event) => {
       if (event.detail && event.detail.text) {
@@ -31,11 +30,8 @@ export default function SpreadsheetGenerator() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     };
-
     window.addEventListener('loadFromHistory', handleLoadFromHistory);
-    return () => {
-      window.removeEventListener('loadFromHistory', handleLoadFromHistory);
-    };
+    return () => window.removeEventListener('loadFromHistory', handleLoadFromHistory);
   }, []);
 
   const handleGenerate = async (e) => {
@@ -46,16 +42,18 @@ export default function SpreadsheetGenerator() {
     setError('');
 
     try {
-      // Verificar login
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (!currentUser) throw new Error('Faça login para continuar.');
 
       // --- CONEXÃO COM O BACKEND ---
-      const response = await fetch(config.ENDPOINTS.GENERATE_SPREADSHEET, {
+      // Usa config ou fallback
+      const endpoint = config.ENDPOINTS.GENERATE_SPREADSHEET || `${config.API_BASE_URL}/generate-spreadsheet`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: description, // O backend espera 'prompt', não 'description'
+          prompt: description,
           user_id: currentUser.id
         }),
       });
@@ -65,22 +63,29 @@ export default function SpreadsheetGenerator() {
         throw new Error(errorData.error || 'Erro ao gerar planilha.');
       }
 
-      // --- DOWNLOAD DO ARQUIVO (BLOB) ---
-      // Diferente do código antigo, agora recebemos o arquivo direto, não um link
+      // --- DOWNLOAD DO ARQUIVO ---
       const blob = await response.blob();
       saveAs(blob, 'planilha_ia.xlsx');
 
-      // --- SALVAR NO HISTÓRICO ---
-      await saveToHistory(
-        currentUser,
-        TOOL_CONFIGS.SPREADSHEET || 'spreadsheet', // Fallback caso não tenha na config
-        description,
-        'Planilha Excel Gerada (Download Direto)',
-        { 
-          downloaded: true,
-          date: new Date().toISOString() 
-        }
-      );
+      // --- SALVAR NO HISTÓRICO (MANUAL E SEGURO) ---
+      try {
+        await fetch(`${config.API_BASE_URL}/save-history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            tool_type: 'spreadsheet', // Backend converte para "Gerador de Planilhas"
+            input_data: description,
+            output_data: 'Arquivo Excel Gerado com Sucesso (.xlsx)',
+            metadata: { 
+              downloaded: true,
+              date: new Date().toISOString() 
+            }
+          })
+        });
+      } catch (histError) {
+        console.error("Erro ao salvar histórico:", histError);
+      }
 
     } catch (err) {
       console.error(err);
@@ -98,10 +103,9 @@ export default function SpreadsheetGenerator() {
           📊 Gerador de Planilhas Excel
         </h1>
         <p style={{ textAlign: 'center', color: '#9ca3af', marginBottom: '30px' }}>
-          Descreva o que você precisa e a IA cria o arquivo Excel pronto para baixar.
+          Descreva exatamente as colunas que você quer e a IA cria o arquivo.
         </p>
 
-        {/* Botão Histórico */}
         {user && (
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <button
@@ -115,12 +119,11 @@ export default function SpreadsheetGenerator() {
                 cursor: 'pointer'
               }}
             >
-              {showHistory ? '▲ Ocultar Histórico' : '📚 Ver Histórico'}
+              {showHistory ? '▲ Ocultar Histórico' : '📚 Ver Pedidos Anteriores'}
             </button>
           </div>
         )}
 
-        {/* Lista Histórico */}
         {showHistory && user && (
           <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#1f2937', borderRadius: '10px' }}>
             <HistoryList user={user} toolType="spreadsheet" />
@@ -136,7 +139,7 @@ export default function SpreadsheetGenerator() {
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ex: Uma planilha de controle financeiro pessoal com colunas para data, descrição, categoria, valor entrada e valor saída..."
+                placeholder="Ex: Planilha de Confeitaria com colunas: Data, Nome do Cliente, Produto (Bolo/Doce), Valor Unitário, Quantidade e Total."
                 required
                 style={{
                   width: '100%',
@@ -167,7 +170,7 @@ export default function SpreadsheetGenerator() {
                 fontSize: '1.1rem'
               }}
             >
-              {isLoading ? '🔨 Criando Arquivo...' : '📥 Baixar Excel (.xlsx)'}
+              {isLoading ? '🔨 Construindo Planilha...' : '📥 Baixar Excel (.xlsx)'}
             </button>
           </form>
 

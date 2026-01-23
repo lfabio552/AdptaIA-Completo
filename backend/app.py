@@ -307,105 +307,98 @@ def download_docx():
         return send_file(f, as_attachment=True, download_name='doc.docx', mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 6. PLANILHAS (VERSÃO CORRIGIDA E ÚNICA)
+# 7. GERADOR DE PLANILHAS (VERSÃO BLINDADA V2)
 @app.route('/generate-spreadsheet', methods=['POST'])
 def generate_spreadsheet():
-    if not model: 
-        return jsonify({'error': 'Erro: Chave API do Gemini não configurada'}), 500
-    
+    # Imports locais para garantir que funcionem
+    import pandas as pd
+    import io
+    import json
+    # O send_file precisa estar importado lá no topo do arquivo: from flask import send_file
+
+    if not model: return jsonify({'error': 'Erro modelo'}), 500
     try:
-        data = request.get_json(force=True, silent=True)
-        if not data:
-            data = json.loads(request.data.decode('utf-8'))
-            
-        if isinstance(data, str): 
-            data = json.loads(data)
-
-        # ⚠️ CRÉDITOS: Descomente se quiser cobrar créditos
-        # user_id = data.get('user_id')
-        # if user_id:
-        #    s, m = check_and_deduct_credit(user_id)
-        #    if not s: return jsonify({'error': m}), 402
-
-        print(f"Gerando planilha para: {data.get('description')}")
-
-        prompt = f"""
-        Você é um especialista em Excel. Crie o conteúdo de uma planilha para:
-        "{data.get('description')}"
-
-        IMPORTANTE: Responda EXATAMENTE neste formato de lista (Célula|Valor):
+        data = request.get_json(force=True)
+        prompt_user = data.get('prompt')
         
-        A1|TÍTULO DA PLANILHA
-        A3|Data
-        B3|Descrição
-        C3|Valor
-        A4|01/01/2024
-        B4|Exemplo de Item
-        C4|100.00
+        print(f"📊 Gerando planilha para: {prompt_user}")
+
+        # Prompt Reforçado para JSON Limpo
+        ai_prompt = f"""
+        Você é um Gerador de Dados para Excel (JSON Generator).
         
-        Gere pelo menos 5 linhas de dados de exemplo para a planilha não ficar vazia.
-        Use títulos em CAIXA ALTA.
-        Não use markdown (```), apenas o texto cru.
+        PEDIDO: "{prompt_user}"
+        
+        REGRAS:
+        1. Responda APENAS com um JSON válido. Sem Markdown (```json), sem explicações.
+        2. O JSON deve ser uma LISTA de objetos, onde cada objeto é uma linha da planilha.
+        3. Use chaves como nomes das colunas.
+        4. Gere 5 linhas de dados de exemplo.
+        
+        Exemplo de Saída:
+        [
+            {{"Data": "01/01/2024", "Item": "Bolo", "Valor": 50}},
+            {{"Data": "02/01/2024", "Item": "Doce", "Valor": 10}}
+        ]
         """
         
-        response = model.generate_content(prompt)
+        response = model.generate_content(ai_prompt)
+        txt = response.text
         
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Planilha Gerada"
+        # Limpeza agressiva do JSON
+        start = txt.find('[')
+        end = txt.rfind(']')
         
-        clean_text = response.text.replace('```', '').strip()
-        lines = clean_text.split('\n')
-        
-        data_found = False
-        
-        for line in lines:
-            if '|' in line:
-                parts = line.split('|')
-                if len(parts) >= 2:
-                    cell = parts[0].strip()
-                    value = "|".join(parts[1:]).strip()
-                    
-                    if re.match(r'^[A-Z]{1,3}[0-9]{1,6}$', cell):
-                        data_found = True
-                        try:
-                            if value.replace('.', '', 1).isdigit():
-                                value = float(value)
-                        except: pass
-                        
-                        try:
-                            ws[cell] = value
-                            if isinstance(value, str) and value.isupper() and len(value) > 2:
-                                ws[cell].font = Font(bold=True)
-                                ws[cell].fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
-                        except: pass
+        if start == -1 or end == -1:
+            print("❌ Erro: IA não gerou JSON válido (colchetes não encontrados).")
+            # Fallback: Tenta criar um dado simples para não dar erro 500
+            dados = [{"Erro": "A IA não entendeu o pedido. Tente ser mais específico."}]
+        else:
+            json_str = txt[start:end+1]
+            try:
+                dados = json.loads(json_str)
+            except:
+                print("❌ Erro ao fazer parse do JSON. Tentando corrigir...")
+                # Tenta corrigir aspas simples para duplas (erro comum da IA)
+                try:
+                    import ast
+                    dados = ast.literal_eval(json_str)
+                except:
+                     dados = [{"Erro": "Formato de dados inválido gerado pela IA."}]
 
-        if not data_found:
-            ws['A1'] = "ERRO NA GERAÇÃO AUTOMÁTICA"
-            ws['A2'] = "A IA não retornou dados no formato correto."
-            ws['A3'] = "Descrição do seu pedido:"
-            ws['B3'] = data.get('description')
-            ws.column_dimensions['A'].width = 30
-            ws.column_dimensions['B'].width = 50
-
-        ws.column_dimensions['A'].width = 20
-        ws.column_dimensions['B'].width = 30
-        ws.column_dimensions['C'].width = 15
-
-        f = io.BytesIO()
-        wb.save(f)
-        f.seek(0)
+        # Criar DataFrame
+        df = pd.DataFrame(dados)
+        
+        # Buffer para salvar o arquivo na memória RAM
+        output = io.BytesIO()
+        
+        # Tenta salvar usando xlsxwriter (mais bonito), se falhar usa openpyxl (padrão)
+        try:
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df.to_excel(writer, index=False, sheet_name='Dados')
+                # Ajuste de colunas
+                worksheet = writer.sheets['Dados']
+                for i, col in enumerate(df.columns):
+                    width = max(df[col].astype(str).map(len).max(), len(col)) + 2
+                    worksheet.set_column(i, i, width)
+        except Exception as e_excel:
+            print(f"⚠️ Erro no XlsxWriter: {e_excel}. Tentando motor padrão...")
+            # Fallback para o motor padrão (requer openpyxl instalado)
+            df.to_excel(output, index=False)
+                
+        output.seek(0)
         
         return send_file(
-            f, 
+            output, 
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True, 
-            download_name='planilha_ia.xlsx', 
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            download_name='planilha_gerada.xlsx'
         )
 
     except Exception as e:
-        print(f"❌ ERRO PLANILHA: {e}")
-        return jsonify({'error': f"Erro ao gerar: {str(e)}"}), 500
+        print(f"❌ ERRO CRÍTICO NO SERVIDOR: {str(e)}")
+        # Retorna o erro exato para o Frontend mostrar no alerta
+        return jsonify({'error': f"Erro interno: {str(e)}"}), 500
 
 
 # 7. UPLOAD PDF (RAG)
