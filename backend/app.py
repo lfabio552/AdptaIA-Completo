@@ -148,61 +148,55 @@ def generate_prompt():
         print(f"Erro Prompt Imagem: {e}")
         return jsonify({'error': str(e)}), 500
 
-# 2. VEO 3 & SORA 2 (CORRIGIDO)
+# ROTA: GERADOR DE PROMPT VEO3 / SORA (COM ESTILOS)
 @app.route('/generate-veo3-prompt', methods=['POST'])
-def generate_video_prompt():
-    if not model: return jsonify({'error': 'Erro modelo'}), 500
+def generate_veo3_prompt():
+    import json
     
+    if not model: return jsonify({'error': 'Erro modelo'}), 500
     try:
-        data = request.get_json(force=True, silent=True)
-        if not data and request.data:
-            try:
-                data = json.loads(request.data.decode('utf-8'))
-            except:
-                return jsonify({'error': 'Invalid JSON'}), 400
-        
-        if not data: data = {}
+        data = request.get_json(force=True)
+        if isinstance(data, str): data = json.loads(data)
 
-        # ⚠️ CRÉDITOS: Descomente se quiser cobrar créditos aqui
+        # ⚠️ CRÉDITOS (Descomente se tiver)
         # user_id = data.get('user_id')
         # if user_id:
-        #     s, m = check_and_deduct_credit(user_id)
-        #     if not s: return jsonify({'error': m}), 402
-
-        target_model = data.get('model', 'Veo 3')
+        #    s, m = check_and_deduct_credit(user_id)
+        #    if not s: return jsonify({'error': m}), 402
         
-        scene = data.get('scene') or data.get('idea')
+        idea = data.get('idea')
+        style = data.get('style', 'Cinematográfico')
+        camera = data.get('camera', 'Cinematic Gimbal')
+
+        if not idea: return jsonify({'error': 'Descreva a cena do vídeo.'}), 400
+
+        # Prompt Especializado para Vídeo
+        ai_prompt = f"""
+        Atue como um Diretor de Cinematografia Especialista em IA (Google Veo, Sora, Runway).
         
-        if not scene:
-            return jsonify({'error': 'A descrição da cena (idea) é obrigatória'}), 400
-
-        style = data.get('style', 'Cinematic')
-        camera = data.get('camera', 'Drone')
-        lighting = data.get('lighting', 'Natural')
-        audio = data.get('audio', '')
-
-        base_instruction = "Crie um prompt OTIMIZADO PARA VÍDEO."
-        if target_model == 'Sora 2':
-            base_instruction += " Foco em física realista e detalhes visuais (Sora)."
-        else:
-            base_instruction += " Foco em termos cinematográficos e técnicos (Veo)."
-
-        prompt = f"""
-        {base_instruction}
-        Cena: {scene}
-        Estilo: {style}
-        Câmera: {camera}
-        Luz: {lighting}
-        Som: {audio}
-        Gere APENAS o prompt final em Inglês.
+        OBJETIVO: Criar um prompt de vídeo altamente detalhado e fluido em INGLÊS.
+        
+        ENTRADAS:
+        - Ideia da Cena: "{idea}"
+        - Estilo Visual: "{style}"
+        - Movimento de Câmera: "{camera}"
+        
+        ESTRUTURA DO PROMPT FINAL (INGLÊS):
+        "[Camera Movement description], [Visual Style keywords]. [Detailed Action/Scene Description]. High resolution, 4k, fluid motion, highly detailed textures."
+        
+        REGRAS:
+        1. Comece descrevendo o movimento da câmera de forma técnica (ex: "A fast FPV drone shot flying through...").
+        2. Descreva a iluminação e a atmosfera de acordo com o estilo "{style}".
+        3. Foque na FLUIDEZ e MOVIMENTO (use verbos de ação).
+        4. Saída APENAS o prompt em Inglês.
         """
         
-        response = model.generate_content(prompt)
+        response = model.generate_content(ai_prompt)
         
-        return jsonify({'prompt': response.text})
-
-    except Exception as e:
-        print(f"Erro Veo3: {e}") 
+        return jsonify({'prompt': response.text.strip()})
+        
+    except Exception as e: 
+        print(f"Erro Veo3: {e}")
         return jsonify({'error': str(e)}), 500
 
 # 3. RESUMIDOR YOUTUBE
