@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import '../App.css';
 import { supabase } from '../supabaseClient';
 import ExemplosSection from '../components/ExemplosSection';
-import { saveHistoryItem } from '../utils/history';
+import { saveHistoryItem } from '../utils/history'; // Mantendo sua importação original
 import HistoryList from '../components/HistoryList';
-import config from '../config'; // 👈 1. IMPORTAMOS O CONFIG AQUI
+import config from '../config';
+import { 
+  AcademicCapIcon, 
+  ArrowDownTrayIcon, 
+  ClipboardIcon, 
+  SparklesIcon,
+  DocumentTextIcon 
+} from '@heroicons/react/24/solid';
 
 export default function AgenteABNT() {
   // Estados
@@ -16,7 +22,7 @@ export default function AgenteABNT() {
   const [showHistory, setShowHistory] = useState(false);
   const [user, setUser] = useState(null);
 
-  // Obter usuário ao carregar componente
+  // Obter usuário
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -25,23 +31,19 @@ export default function AgenteABNT() {
     getUser();
   }, []);
 
-  // Ouvir eventos do histórico
+  // Ouvir histórico
   useEffect(() => {
     const handleLoadFromHistory = (event) => {
       if (event.detail && event.detail.text) {
         setRawText(event.detail.text);
-        setFormattedText('');
+        setFormattedText(''); // Limpa o output anterior para evitar confusão
         setError('');
         setShowHistory(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     };
-    
     window.addEventListener('loadFromHistory', handleLoadFromHistory);
-    
-    return () => {
-      window.removeEventListener('loadFromHistory', handleLoadFromHistory);
-    };
+    return () => window.removeEventListener('loadFromHistory', handleLoadFromHistory);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -57,15 +59,12 @@ export default function AgenteABNT() {
         setUser(currentUser);
       }
 
-      const currentUser = user;
-
-      // 👇 2. USAMOS O ENDEREÇO DO CONFIG (Seja local ou nuvem, ele se vira)
       const response = await fetch(config.ENDPOINTS.FORMAT_ABNT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             text: rawText,
-            user_id: currentUser.id 
+            user_id: user.id 
         }),
       });
 
@@ -78,8 +77,8 @@ export default function AgenteABNT() {
 
       // Salvar histórico
       try {
-        const historySaved = await saveHistoryItem(
-          currentUser,
+        await saveHistoryItem(
+          user,
           'abnt',
           'Formatador ABNT',
           rawText,
@@ -90,12 +89,6 @@ export default function AgenteABNT() {
             formatted_length: data.formatted_text.length
           }
         );
-
-        if (historySaved) {
-          console.log('✅ Histórico do ABNT salvo com sucesso!');
-        } else {
-          console.warn('⚠️ Histórico não foi salvo');
-        }
       } catch (historyError) {
         console.error('❌ Erro ao salvar histórico:', historyError);
       }
@@ -108,15 +101,11 @@ export default function AgenteABNT() {
   };
 
   const handleDownload = async () => {
-    if (!formattedText) {
-      alert("Primeiro gere o texto formatado.");
-      return;
-    }
+    if (!formattedText) return alert("Primeiro gere o texto formatado.");
     setIsDownloading(true);
     setError('');
 
     try {
-      // 👇 3. AQUI TAMBÉM USAMOS O CONFIG
       const response = await fetch(config.ENDPOINTS.DOWNLOAD_DOCX, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,7 +121,7 @@ export default function AgenteABNT() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'trabalho_formatado.docx';
+      a.download = 'Trabalho_ABNT.docx';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -146,151 +135,221 @@ export default function AgenteABNT() {
   };
 
   return (
-    <div className="container">
-      <header>
-        <h1>Agente de Formatação ABNT 🎓</h1>
-        <p>Cole seu trabalho abaixo e deixe a IA formatar para você.</p>
+    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
-        {user && (
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            style={{
-              marginTop: '10px',
-              padding: '8px 16px',
-              backgroundColor: showHistory ? '#7e22ce' : '#374151',
-              color: '#d1d5db',
-              border: '1px solid #4b5563',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              transition: 'all 0.2s'
-            }}
-          >
-            {showHistory ? '▲ Ocultar Histórico' : '📚 Ver Meu Histórico ABNT'}
-          </button>
-        )}
-      </header>
-      
-      {showHistory && user && (
-        <div style={{
-          marginBottom: '30px',
-          padding: '20px',
-          backgroundColor: '#1f2937',
-          borderRadius: '10px',
-          border: '1px solid #374151'
-        }}>
-          <HistoryList user={user} toolType="abnt" />
-        </div>
-      )}
-      
-      <form onSubmit={handleSubmit}>
-        <div className="form-group" style={{ textAlign: 'left' }}>
-          <label>Seu texto:</label>
-          <textarea
-            value={rawText}
-            onChange={(e) => setRawText(e.target.value)}
-            placeholder="Cole seu texto aqui..."
-            required
-            style={{ 
-              minHeight: '250px',
-              width: '95%',
-              padding: '15px',
-              borderRadius: '8px',
-              border: '1px solid #4b5563',
-              backgroundColor: '#374151',
-              color: 'white',
-              fontFamily: 'sans-serif',
-              fontSize: '16px'
-            }}
-          />
-        </div>
-
-        <button 
-          type="submit" 
-          disabled={isLoading}
-          style={{
-            padding: '15px 30px',
-            backgroundColor: isLoading ? '#4c1d95' : '#7e22ce',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            opacity: isLoading ? 0.8 : 1
-          }}
-        >
-          {isLoading ? '📝 Formatando (-1 Crédito)...' : '✨ Formatar Texto'}
-        </button>
-      </form>
-
-      {error && (
-        <div className="error-message" style={{
-          color: '#ff6b6b', 
-          marginTop: '20px',
-          padding: '15px',
-          backgroundColor: '#450a0a',
-          borderRadius: '8px',
-          border: '1px solid #dc2626'
-        }}>
-          <strong>⚠️ Erro:</strong> {error}
-        </div>
-      )}
-
-      {formattedText && (
-        <div className="result-container" style={{textAlign: 'left', marginTop: '40px'}}>
-          <h2 style={{color: '#9D4EDD'}}>Seu Texto Formatado:</h2>
-          <div className="prompt-box" style={{
-            whiteSpace: 'pre-wrap',
-            backgroundColor: '#1f2937',
-            padding: '20px',
-            borderRadius: '10px',
-            border: '1px solid #374151',
-            maxHeight: '500px',
-            overflowY: 'auto'
+        {/* CABEÇALHO */}
+        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+          <div style={{ 
+             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+             background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)', // Azul Acadêmico
+             width: '60px', height: '60px', borderRadius: '15px', marginBottom: '20px',
+             boxShadow: '0 10px 30px -10px rgba(37, 99, 235, 0.5)'
           }}>
-            <p style={{ lineHeight: '1.6', margin: 0 }}>{formattedText}</p>
+            <AcademicCapIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          
-          <div style={{ marginTop: '20px' }}>
-            <button 
-              onClick={() => navigator.clipboard.writeText(formattedText)} 
-              className="copy-button"
-              style={{
-                padding: '12px 25px',
-                backgroundColor: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                marginRight: '10px',
-                fontWeight: 'bold'
-              }}
-            >
-              📋 Copiar Texto
-            </button>
-            
-            <button 
-              onClick={handleDownload} 
-              disabled={isDownloading}
-              style={{
-                padding: '12px 25px',
-                backgroundColor: isDownloading ? '#5A189A' : '#7e22ce',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                opacity: isDownloading ? 0.7 : 1,
-                fontWeight: 'bold'
-              }}
-            >
-              {isDownloading ? '📥 Gerando .docx...' : '📥 Baixar como Word (.docx)'}
-            </button>
-          </div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+            Formatador ABNT Inteligente
+          </h1>
+          <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
+            Cole seu texto bruto e nossa IA organiza citações, referências e margens automaticamente.
+          </p>
         </div>
-      )}
-      
-      <ExemplosSection ferramentaId="agente-abnt" />
+
+        {/* BOTÃO HISTÓRICO */}
+        {user && (
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: showHistory ? '#374151' : 'rgba(255,255,255,0.05)',
+                color: '#d1d5db',
+                border: '1px solid #374151',
+                borderRadius: '50px',
+                cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                fontSize: '0.9rem', fontWeight: '500'
+              }}
+            >
+              <SparklesIcon style={{ width: '16px' }} />
+              {showHistory ? 'Ocultar Histórico' : 'Ver Trabalhos Anteriores'}
+            </button>
+          </div>
+        )}
+
+        {showHistory && user && (
+          <div style={{ marginBottom: '40px', padding: '20px', backgroundColor: '#1f2937', borderRadius: '16px', border: '1px solid #374151' }}>
+            <HistoryList user={user} toolType="abnt" />
+          </div>
+        )}
+
+        {/* GRID PRINCIPAL (Input Esquerda / Output Direita) */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
+          gap: '40px',
+          alignItems: 'start'
+        }}>
+          
+          {/* LADO ESQUERDO: INPUT */}
+          <div style={{ 
+            backgroundColor: '#1f2937', 
+            padding: '25px', 
+            borderRadius: '20px', 
+            border: '1px solid #374151',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+          }}>
+            <form onSubmit={handleSubmit}>
+              <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
+                📝 Texto Original (Bagunçado):
+              </label>
+              <textarea
+                value={rawText}
+                onChange={(e) => setRawText(e.target.value)}
+                placeholder="Cole seu texto aqui... Ex: 'Segundo autor x (2020) a tecnologia é boa...'"
+                required
+                style={{
+                  width: '100%',
+                  height: '400px', // Altura boa para texto longo
+                  padding: '15px',
+                  borderRadius: '12px',
+                  backgroundColor: '#111827',
+                  color: 'white',
+                  border: '1px solid #4b5563',
+                  fontSize: '1rem',
+                  lineHeight: '1.6',
+                  resize: 'none',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit'
+                }}
+              />
+              
+              <div style={{ marginTop: '20px' }}>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    background: 'linear-gradient(90deg, #2563eb 0%, #4f46e5 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontWeight: 'bold',
+                    cursor: isLoading ? 'wait' : 'pointer',
+                    fontSize: '1.1rem',
+                    boxShadow: '0 10px 20px -5px rgba(37, 99, 235, 0.4)',
+                    transition: 'transform 0.1s',
+                    opacity: isLoading ? 0.7 : 1
+                  }}
+                >
+                  {isLoading ? '🔄 Analisando Normas...' : '✨ Formatar nas Normas ABNT'}
+                </button>
+                <p style={{ textAlign: 'center', marginTop: '10px', fontSize: '0.85rem', color: '#6b7280' }}>
+                  Custa 1 crédito por uso.
+                </p>
+              </div>
+
+              {error && (
+                <div style={{ marginTop: '20px', color: '#fca5a5', padding: '15px', backgroundColor: '#450a0a', borderRadius: '10px', border: '1px solid #ef4444' }}>
+                  ⚠️ {error}
+                </div>
+              )}
+            </form>
+          </div>
+
+          {/* LADO DIREITO: PREVIEW E DOWNLOAD */}
+          <div style={{ 
+            backgroundColor: '#1f2937', 
+            padding: '25px', 
+            borderRadius: '20px', 
+            border: formattedText ? '1px solid #10b981' : '1px solid #374151', // Borda verde se tiver sucesso
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '560px' // Alinha a altura com o lado esquerdo
+          }}>
+            <h3 style={{ color: formattedText ? '#6ee7b7' : '#9ca3af', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <DocumentTextIcon style={{ width: '24px' }} /> 
+              {formattedText ? 'Resultado Formatado:' : 'Pré-visualização'}
+            </h3>
+            
+            <div style={{ 
+              flexGrow: 1,
+              backgroundColor: '#ffffff', // Fundo branco para simular papel
+              color: '#000000', // Texto preto
+              padding: '30px', // Margens de papel
+              borderRadius: '8px',
+              fontFamily: "'Times New Roman', serif", // Fonte acadêmica
+              fontSize: '14px',
+              lineHeight: '1.5',
+              whiteSpace: 'pre-wrap',
+              border: '1px solid #d1d5db',
+              marginBottom: '20px',
+              overflowY: 'auto',
+              maxHeight: '400px',
+              boxShadow: 'inset 0 0 10px rgba(0,0,0,0.05)'
+            }}>
+              {formattedText || (
+                <span style={{ color: '#9ca3af', fontFamily: 'sans-serif' }}>
+                  O texto formatado aparecerá aqui com recuos, citações e referências organizadas...
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '15px' }}>
+                <button
+                  onClick={() => {navigator.clipboard.writeText(formattedText); alert('Texto copiado!');}}
+                  disabled={!formattedText}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#374151',
+                    color: 'white',
+                    border: '1px solid #4b5563',
+                    borderRadius: '10px',
+                    cursor: formattedText ? 'pointer' : 'not-allowed',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    opacity: formattedText ? 1 : 0.5
+                  }}
+                >
+                  <ClipboardIcon style={{ width: '20px' }} /> Copiar
+                </button>
+
+                <button
+                  onClick={handleDownload}
+                  disabled={!formattedText || isDownloading}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#10b981', // Verde Word
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    cursor: (formattedText && !isDownloading) ? 'pointer' : 'not-allowed',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    opacity: (formattedText && !isDownloading) ? 1 : 0.5,
+                    boxShadow: formattedText ? '0 4px 12px rgba(16, 185, 129, 0.3)' : 'none'
+                  }}
+                >
+                  <ArrowDownTrayIcon style={{ width: '20px' }} /> 
+                  {isDownloading ? 'Gerando .docx...' : 'Baixar Word'}
+                </button>
+            </div>
+          </div>
+
+        </div>
+
+        <ExemplosSection ferramentaId="agente-abnt" />
+      </div>
     </div>
   );
 }

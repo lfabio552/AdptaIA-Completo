@@ -3,8 +3,8 @@ import { supabase } from '../supabaseClient';
 import config from '../config';
 import HistoryList from '../components/HistoryList';
 import ExemplosSection from '../components/ExemplosSection';
+import { SparklesIcon, PaintBrushIcon } from '@heroicons/react/24/solid';
 
-// Lista de estilos para o usuário escolher
 const stylesList = [
   'Cinematográfico (Padrão)',
   'Fotorealista / Realista',
@@ -21,7 +21,7 @@ const stylesList = [
 
 export default function ImagePromptGenerator() {
   const [idea, setIdea] = useState('');
-  const [style, setStyle] = useState(stylesList[0]); // NOVO: Estado do estilo
+  const [style, setStyle] = useState(stylesList[0]);
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(''); 
@@ -36,12 +36,10 @@ export default function ImagePromptGenerator() {
     getUser();
   }, []);
 
-  // --- OUVINTE DO HISTÓRICO ---
   useEffect(() => {
     const handleLoadFromHistory = (event) => {
       if (event.detail && event.detail.text) {
         setIdea(event.detail.text);
-        // Se o histórico tiver o estilo salvo nos metadados, poderíamos carregar aqui também
         if (event.detail.metadata?.style) {
             setStyle(event.detail.metadata.style);
         }
@@ -63,7 +61,6 @@ export default function ImagePromptGenerator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Faça login para continuar.');
 
-      // 1. CHAMADA API
       const endpoint = config.ENDPOINTS.GENERATE_PROMPT || `${config.API_BASE_URL}/generate-prompt`;
 
       const response = await fetch(endpoint, {
@@ -71,7 +68,7 @@ export default function ImagePromptGenerator() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           idea: idea,
-          style: style, // NOVO: Enviando o estilo escolhido
+          style: style,
           user_id: user.id
         }),
       });
@@ -82,7 +79,6 @@ export default function ImagePromptGenerator() {
       const finalPrompt = data.prompt || data.advanced_prompt;
       setGeneratedPrompt(finalPrompt);
 
-      // 2. SALVAR HISTÓRICO
       try {
         await fetch(`${config.API_BASE_URL}/save-history`, {
           method: 'POST',
@@ -94,7 +90,7 @@ export default function ImagePromptGenerator() {
             output_data: finalPrompt,
             metadata: { 
                 length: finalPrompt.length,
-                style: style // NOVO: Salvando o estilo no histórico
+                style: style 
             }
           })
         });
@@ -110,152 +106,203 @@ export default function ImagePromptGenerator() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#111827', color: 'white', padding: '20px' }}>
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
         
-        <h1 style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '10px' }}>
-          🎨 Criador de Prompts (Midjourney/DALL-E)
-        </h1>
-        <p style={{ textAlign: 'center', color: '#9ca3af', marginBottom: '30px' }}>
-          Transforme ideias simples em prompts profissionais com o estilo que você escolher.
-        </p>
+        {/* CABEÇALHO */}
+        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+          <div style={{ 
+             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+             background: 'linear-gradient(135deg, #ec4899 0%, #a855f7 100%)', 
+             width: '60px', height: '60px', borderRadius: '15px', marginBottom: '20px',
+             boxShadow: '0 10px 30px -10px rgba(236, 72, 153, 0.5)'
+          }}>
+            <PaintBrushIcon style={{ width: '32px', color: 'white' }} />
+          </div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+            Prompt de Imagem IA
+          </h1>
+          <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
+            Transforme ideias simples em descrições técnicas perfeitas para Midjourney, DALL-E e Stable Diffusion.
+          </p>
+        </div>
 
+        {/* BOTÃO HISTÓRICO */}
         {user && (
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
             <button
               onClick={() => setShowHistory(!showHistory)}
               style={{
-                padding: '8px 16px',
-                backgroundColor: showHistory ? '#7e22ce' : '#374151',
+                padding: '10px 20px',
+                backgroundColor: showHistory ? '#374151' : 'rgba(255,255,255,0.05)',
                 color: '#d1d5db',
-                border: '1px solid #4b5563',
-                borderRadius: '8px',
-                cursor: 'pointer'
+                border: '1px solid #374151',
+                borderRadius: '50px',
+                cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                fontSize: '0.9rem', fontWeight: '500'
               }}
             >
-              {showHistory ? '▲ Ocultar Histórico' : '📚 Ver Ideias Anteriores'}
+              <SparklesIcon style={{ width: '16px' }} />
+              {showHistory ? 'Ocultar Histórico' : 'Ver Meus Prompts Anteriores'}
             </button>
           </div>
         )}
 
         {showHistory && user && (
-          <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#1f2937', borderRadius: '10px' }}>
+          <div style={{ marginBottom: '40px', padding: '20px', backgroundColor: '#1f2937', borderRadius: '16px', border: '1px solid #374151' }}>
             <HistoryList user={user} toolType="image-prompt" />
           </div>
         )}
 
-        <div style={{ backgroundColor: '#1f2937', padding: '30px', borderRadius: '12px', border: '1px solid #374151' }}>
-          <form onSubmit={handleGenerate}>
-            
-            {/* Input da Ideia */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '10px', fontSize: '1.2rem' }}>
-                Sua Ideia (em português):
-              </label>
-              <textarea
-                value={idea}
-                onChange={(e) => setIdea(e.target.value)}
-                placeholder="Ex: Um gato astronauta flutuando no espaço com planetas coloridos ao fundo..."
-                required
-                style={{
-                  width: '100%',
-                  height: '100px',
-                  padding: '15px',
-                  borderRadius: '8px',
-                  backgroundColor: '#111827',
-                  color: 'white',
-                  border: '1px solid #4b5563',
-                  fontSize: '16px'
-                }}
-              />
-            </div>
-
-            {/* NOVO: Seletor de Estilo */}
-            <div style={{ marginBottom: '25px' }}>
-              <label style={{ display: 'block', marginBottom: '10px', fontSize: '1.1rem' }}>
-                Estilo Artístico:
-              </label>
-              <select
-                value={style}
-                onChange={(e) => setStyle(e.target.value)}
-                style={{
+        {/* GRID PRINCIPAL */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr', 
+          gap: '40px',
+          alignItems: 'start'
+        }}>
+          
+          {/* LADO ESQUERDO: CONTROLES */}
+          <div style={{ 
+            backgroundColor: '#1f2937', 
+            padding: '30px', 
+            borderRadius: '20px', 
+            border: '1px solid #374151',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+          }}>
+            <form onSubmit={handleGenerate}>
+              <div style={{ marginBottom: '25px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
+                  Descreva sua Ideia:
+                </label>
+                <textarea
+                  value={idea}
+                  onChange={(e) => setIdea(e.target.value)}
+                  placeholder="Ex: Um gato astronauta flutuando no espaço com planetas coloridos ao fundo..."
+                  required
+                  style={{
                     width: '100%',
-                    padding: '12px',
-                    borderRadius: '8px',
+                    height: '140px',
+                    padding: '15px',
+                    borderRadius: '12px',
                     backgroundColor: '#111827',
                     color: 'white',
-                    border: '1px solid #ec4899', // Borda rosa para destacar
+                    border: '1px solid #4b5563',
                     fontSize: '1rem',
-                    cursor: 'pointer'
+                    lineHeight: '1.5',
+                    resize: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
+                  Estilo Visual:
+                </label>
+                <select
+                  value={style}
+                  onChange={(e) => setStyle(e.target.value)}
+                  style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: '12px',
+                      backgroundColor: '#111827',
+                      color: 'white',
+                      border: '1px solid #ec4899', 
+                      fontSize: '1rem',
+                      cursor: 'pointer',
+                      boxSizing: 'border-box'
+                  }}
+                >
+                  {stylesList.map((s, index) => (
+                      <option key={index} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  background: 'linear-gradient(90deg, #ec4899 0%, #db2777 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  cursor: isLoading ? 'wait' : 'pointer',
+                  fontSize: '1.1rem',
+                  boxShadow: '0 10px 20px -5px rgba(236, 72, 153, 0.4)',
+                  transition: 'transform 0.1s'
                 }}
               >
-                {stylesList.map((s, index) => (
-                    <option key={index} value={s} style={{ backgroundColor: '#1f2937' }}>
-                        {s}
-                    </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              style={{
-                width: '100%',
-                padding: '15px',
-                background: 'linear-gradient(90deg, #ec4899 0%, #db2777 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                cursor: isLoading ? 'wait' : 'pointer',
-                fontSize: '1.1rem'
-              }}
-            >
-              {isLoading ? '✨ Criando Mágica...' : '✨ Gerar Prompt Profissional'}
-            </button>
-          </form>
-
-          {errorMessage && (
-            <div style={{ marginTop: '20px', color: '#fca5a5', padding: '10px', backgroundColor: '#450a0a', borderRadius: '8px' }}>
-              ⚠️ {errorMessage}
-            </div>
-          )}
-
-          {generatedPrompt && (
-            <div style={{ marginTop: '30px', backgroundColor: '#111827', padding: '25px', borderRadius: '8px', border: '1px solid #ec4899' }}>
-              <h3 style={{ color: '#fbcfe8', marginBottom: '15px' }}>
-                🚀 Prompt Gerado (Estilo: {style.split(' ')[0]}):
-              </h3>
-              <div style={{ 
-                color: '#d1d5db', 
-                lineHeight: '1.6', 
-                marginBottom: '20px', 
-                backgroundColor: '#000', 
-                padding: '15px', 
-                borderRadius: '6px',
-                fontFamily: 'monospace',
-                fontSize: '0.95rem'
-              }}>
-                {generatedPrompt}
+                {isLoading ? '✨ Criando Mágica...' : 'Gerar Prompt'}
+              </button>
+            </form>
+            
+            {errorMessage && (
+              <div style={{ marginTop: '20px', color: '#fca5a5', padding: '12px', backgroundColor: '#450a0a', borderRadius: '10px', fontSize: '0.9rem' }}>
+                ⚠️ {errorMessage}
               </div>
+            )}
+          </div>
+
+          {/* LADO DIREITO: RESULTADO */}
+          <div style={{ 
+            backgroundColor: '#1f2937', 
+            padding: '30px', 
+            borderRadius: '20px', 
+            border: '1px solid #ec4899', // Borda Rosa para destacar o output
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '400px'
+          }}>
+            <h3 style={{ color: '#fbcfe8', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <SparklesIcon style={{ width: '24px' }} /> Resultado:
+            </h3>
+            
+            <div style={{ 
+              flexGrow: 1,
+              backgroundColor: '#000', 
+              padding: '20px', 
+              borderRadius: '12px',
+              fontFamily: 'monospace',
+              fontSize: '0.95rem',
+              color: '#d1d5db',
+              lineHeight: '1.6',
+              whiteSpace: 'pre-wrap',
+              border: '1px solid #374151',
+              marginBottom: '20px'
+            }}>
+              {generatedPrompt || <span style={{color: '#4b5563'}}>O prompt otimizado aparecerá aqui...</span>}
+            </div>
+
+            {generatedPrompt && (
               <button
                 onClick={() => {navigator.clipboard.writeText(generatedPrompt); alert('Copiado!');}}
                 style={{
                   width: '100%',
-                  padding: '10px',
+                  padding: '12px',
                   backgroundColor: '#be185d',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '10px',
                   cursor: 'pointer',
-                  fontWeight: 'bold'
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
                 }}
               >
-                📋 Copiar para Midjourney / DALL-E
+                📋 Copiar Texto
               </button>
-            </div>
-          )}
+            )}
+          </div>
+
         </div>
 
         <ExemplosSection ferramentaId="image-prompt" />

@@ -3,11 +3,18 @@ import { supabase } from '../supabaseClient';
 import config from '../config';
 import HistoryList from '../components/HistoryList';
 import ExemplosSection from '../components/ExemplosSection';
+import { 
+  PencilIcon, 
+  AcademicCapIcon, 
+  ChartBarIcon, 
+  CheckCircleIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/react/24/solid';
 
 export default function EssayCorrector() {
-  const [theme, setTheme] = useState(''); // NOVO: Campo de Tema
+  const [theme, setTheme] = useState('');
   const [essayText, setEssayText] = useState('');
-  const [result, setResult] = useState(null); // Agora guarda o objeto JSON (nota, feedback)
+  const [result, setResult] = useState(null); 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
@@ -21,12 +28,10 @@ export default function EssayCorrector() {
     getUser();
   }, []);
 
-  // --- OUVINTE DO HISTÓRICO ---
   useEffect(() => {
     const handleLoadFromHistory = (event) => {
       if (event.detail && event.detail.text) {
         setEssayText(event.detail.text); 
-        // Se tiver metadados de tema no histórico, poderia carregar aqui também
         setShowHistory(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -45,13 +50,12 @@ export default function EssayCorrector() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Faça login para corrigir redações.');
 
-      // 1. CHAMADA API (Payload corrigido para essay + theme)
       const response = await fetch(config.ENDPOINTS.CORRECT_ESSAY || `${config.API_BASE_URL}/correct-essay`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          essay: essayText, // Backend espera 'essay', não 'text'
-          theme: theme || 'Tema Livre', // Backend espera 'theme'
+          essay: essayText,
+          theme: theme || 'Tema Livre',
           user_id: user.id
         }),
       });
@@ -59,21 +63,17 @@ export default function EssayCorrector() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Erro ao corrigir redação.');
 
-      // O Backend retorna um JSON { total_score, competencies, feedback }
       setResult(data);
 
-      // 2. SALVAR HISTÓRICO (Manual e formatado)
       try {
-        const scoreResumo = `Nota: ${data.total_score} - ${data.feedback ? data.feedback.substring(0, 50) : ''}...`;
-        
         await fetch(`${config.API_BASE_URL}/save-history`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             user_id: user.id,
-            tool_type: 'essay-corrector', // Backend converte para "Corretor de Redação"
+            tool_type: 'essay-corrector',
             input_data: `Tema: ${theme}\n\n${essayText.substring(0, 100)}...`,
-            output_data: JSON.stringify(data), // Salva o JSON completo para consultas futuras
+            output_data: JSON.stringify(data),
             metadata: { 
               theme: theme, 
               score: data.total_score,
@@ -92,80 +92,130 @@ export default function EssayCorrector() {
     }
   };
 
-  return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#111827', color: 'white', padding: '20px' }}>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        
-        <h1 style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '10px' }}>
-          📝 Corretor de Redação IA
-        </h1>
-        <p style={{ textAlign: 'center', color: '#9ca3af', marginBottom: '30px' }}>
-          Avaliação estilo ENEM/Concursos com nota detalhada por competência.
-        </p>
+  // Função auxiliar para cor da nota
+  const getScoreColor = (score) => {
+      if (score >= 900) return '#4ade80'; // Verde
+      if (score >= 700) return '#facc15'; // Amarelo
+      return '#f87171'; // Vermelho
+  };
 
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        
+        {/* CABEÇALHO */}
+        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+          <div style={{ 
+             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+             background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', // Laranja
+             width: '60px', height: '60px', borderRadius: '15px', marginBottom: '20px',
+             boxShadow: '0 10px 30px -10px rgba(245, 158, 11, 0.5)'
+          }}>
+            <AcademicCapIcon style={{ width: '32px', color: 'white' }} />
+          </div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+            Corretor de Redação IA
+          </h1>
+          <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
+            Receba uma correção detalhada no estilo ENEM/Concursos, com nota por competência.
+          </p>
+        </div>
+
+        {/* BOTÃO HISTÓRICO */}
         {user && (
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
             <button
               onClick={() => setShowHistory(!showHistory)}
               style={{
-                padding: '8px 16px',
-                backgroundColor: showHistory ? '#7e22ce' : '#374151',
+                padding: '10px 20px',
+                backgroundColor: showHistory ? '#374151' : 'rgba(255,255,255,0.05)',
                 color: '#d1d5db',
-                border: '1px solid #4b5563',
-                borderRadius: '8px',
-                cursor: 'pointer'
+                border: '1px solid #374151',
+                borderRadius: '50px',
+                cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                fontSize: '0.9rem', fontWeight: '500'
               }}
             >
-              {showHistory ? '▲ Ocultar Histórico' : '📚 Ver Correções Anteriores'}
+              <ChartBarIcon style={{ width: '16px' }} />
+              {showHistory ? 'Ocultar Histórico' : 'Ver Correções Anteriores'}
             </button>
           </div>
         )}
 
         {showHistory && user && (
-          <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#1f2937', borderRadius: '10px' }}>
+          <div style={{ marginBottom: '40px', padding: '20px', backgroundColor: '#1f2937', borderRadius: '16px', border: '1px solid #374151' }}>
             <HistoryList user={user} toolType="essay-corrector" />
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+        {/* GRID PRINCIPAL */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
+          gap: '40px',
+          alignItems: 'stretch'
+        }}>
           
           {/* LADO ESQUERDO: INPUTS */}
-          <div style={{ backgroundColor: '#1f2937', padding: '25px', borderRadius: '12px', border: '1px solid #374151' }}>
-            <form onSubmit={handleCorrect}>
+          <div style={{ 
+            backgroundColor: '#1f2937', 
+            padding: '30px', 
+            borderRadius: '20px', 
+            border: '1px solid #374151',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <form onSubmit={handleCorrect} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
               
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Tema da Redação:</label>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#e5e7eb' }}>
+                  Tema da Redação:
+                </label>
                 <input
                   type="text"
                   value={theme}
                   onChange={(e) => setTheme(e.target.value)}
                   placeholder="Ex: Os desafios da mobilidade urbana no Brasil"
                   required
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', backgroundColor: '#111827', color: 'white', border: '1px solid #4b5563' }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Seu Texto:</label>
-                <textarea
-                  value={essayText}
-                  onChange={(e) => setEssayText(e.target.value)}
-                  placeholder="Cole sua redação aqui..."
-                  required
                   style={{
                     width: '100%',
-                    height: '400px',
-                    padding: '15px',
-                    borderRadius: '8px',
+                    padding: '12px',
+                    borderRadius: '10px',
                     backgroundColor: '#111827',
                     color: 'white',
                     border: '1px solid #4b5563',
-                    fontSize: '16px',
-                    lineHeight: '1.5',
-                    resize: 'vertical'
+                    boxSizing: 'border-box'
                   }}
                 />
-                <div style={{ marginTop: '5px', textAlign: 'right', fontSize: '0.8rem', color: '#6b7280' }}>
+              </div>
+
+              <div style={{ marginBottom: '20px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#e5e7eb' }}>
+                  Sua Redação:
+                </label>
+                <textarea
+                  value={essayText}
+                  onChange={(e) => setEssayText(e.target.value)}
+                  placeholder="Cole sua redação aqui para ser avaliada..."
+                  required
+                  style={{
+                    width: '100%',
+                    flexGrow: 1,
+                    minHeight: '300px',
+                    padding: '15px',
+                    borderRadius: '10px',
+                    backgroundColor: '#111827',
+                    color: 'white',
+                    border: '1px solid #4b5563',
+                    fontSize: '1rem',
+                    lineHeight: '1.5',
+                    resize: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <div style={{ marginTop: '8px', textAlign: 'right', fontSize: '0.85rem', color: '#9ca3af' }}>
                    {essayText.split(/\s+/).filter(w => w.length > 0).length} palavras
                 </div>
               </div>
@@ -175,63 +225,100 @@ export default function EssayCorrector() {
                 disabled={isLoading || essayText.length < 50}
                 style={{
                   width: '100%',
-                  padding: '15px',
-                  background: 'linear-gradient(90deg, #ea580c 0%, #f97316 100%)',
+                  padding: '16px',
+                  background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '8px',
+                  borderRadius: '12px',
                   fontWeight: 'bold',
-                  fontSize: '1.1rem',
                   cursor: (isLoading || essayText.length < 50) ? 'not-allowed' : 'pointer',
-                  opacity: (isLoading || essayText.length < 50) ? 0.6 : 1
+                  fontSize: '1.1rem',
+                  opacity: (isLoading || essayText.length < 50) ? 0.6 : 1,
+                  boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)',
+                  transition: 'transform 0.1s'
                 }}
               >
-                {isLoading ? '🤖 Analisando Competências...' : '🔍 Corrigir Agora'}
+                {isLoading ? '🤖 Corrigindo...' : '🔍 Avaliar Redação'}
               </button>
             </form>
-            {error && <div style={{ color: '#fca5a5', marginTop: '15px', textAlign: 'center' }}>⚠️ {error}</div>}
+            
+            {error && (
+              <div style={{ marginTop: '20px', color: '#fca5a5', padding: '12px', backgroundColor: '#450a0a', borderRadius: '10px', fontSize: '0.9rem', textAlign: 'center' }}>
+                ⚠️ {error}
+              </div>
+            )}
           </div>
 
-          {/* LADO DIREITO: RESULTADO (FORMATADO) */}
-          <div style={{ backgroundColor: '#1f2937', padding: '25px', borderRadius: '12px', border: '1px solid #ea580c' }}>
-            <h3 style={{ color: '#fdba74', marginBottom: '20px', textAlign: 'center' }}>📊 Resultado da Correção</h3>
+          {/* LADO DIREITO: BOLETIM (RESULTADO) */}
+          <div style={{ 
+            backgroundColor: '#1f2937', 
+            padding: '30px', 
+            borderRadius: '20px', 
+            border: '1px solid #f59e0b', // Borda Laranja
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '600px'
+          }}>
+            <h3 style={{ color: '#fbbf24', marginBottom: '25px', textAlign: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
+              📊 Boletim de Desempenho
+            </h3>
             
             {!result ? (
-              <div style={{ textAlign: 'center', color: '#6b7280', marginTop: '100px' }}>
-                <p>O boletim detalhado aparecerá aqui.</p>
+              <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#6b7280', textAlign: 'center' }}>
+                <AcademicCapIcon style={{ width: '60px', opacity: 0.2, marginBottom: '15px' }} />
+                <p style={{fontSize: '1.1rem'}}>Envie sua redação para ver a nota.</p>
               </div>
             ) : (
-              <div style={{ maxHeight: '600px', overflowY: 'auto', paddingRight: '5px' }}>
+              <div style={{ flexGrow: 1, overflowY: 'auto', paddingRight: '5px' }}>
                 
-                {/* Nota Total */}
-                <div style={{ textAlign: 'center', marginBottom: '30px', padding: '20px', backgroundColor: '#374151', borderRadius: '10px' }}>
-                    <span style={{ fontSize: '1rem', color: '#d1d5db' }}>Nota Final</span>
-                    <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: result.total_score >= 800 ? '#4ade80' : result.total_score >= 600 ? '#facc15' : '#f87171' }}>
+                {/* NOTA PRINCIPAL */}
+                <div style={{ 
+                    textAlign: 'center', 
+                    marginBottom: '30px', 
+                    padding: '25px', 
+                    backgroundColor: '#111827', 
+                    borderRadius: '16px',
+                    border: '1px solid #374151',
+                    position: 'relative',
+                    overflow: 'hidden'
+                }}>
+                    <div style={{ fontSize: '1rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5px' }}>Nota Final</div>
+                    <div style={{ fontSize: '4rem', fontWeight: '800', lineHeight: 1, color: getScoreColor(result.total_score) }}>
                         {result.total_score}
+                    </div>
+                    <div style={{ fontSize: '0.9rem', color: '#6b7280', marginTop: '5px' }}>de 1000 pontos</div>
+                </div>
+
+                {/* FEEDBACK GERAL */}
+                <div style={{ marginBottom: '30px' }}>
+                    <h4 style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        📝 Análise Geral
+                    </h4>
+                    <div style={{ backgroundColor: '#111827', padding: '15px', borderRadius: '10px', color: '#d1d5db', lineHeight: '1.6', fontSize: '0.95rem' }}>
+                        {result.feedback}
                     </div>
                 </div>
 
-                {/* Feedback Geral */}
-                <div style={{ marginBottom: '25px' }}>
-                    <h4 style={{ color: '#fff', borderBottom: '1px solid #4b5563', paddingBottom: '5px' }}>📝 Análise Geral</h4>
-                    <p style={{ color: '#d1d5db', marginTop: '10px', lineHeight: '1.6' }}>{result.feedback}</p>
-                </div>
-
-                {/* Competências (Se houver) */}
+                {/* COMPETÊNCIAS */}
                 {result.competencies && (
                     <div>
-                        <h4 style={{ color: '#fff', borderBottom: '1px solid #4b5563', paddingBottom: '5px', marginBottom: '15px' }}>🎯 Competências</h4>
+                        <h4 style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            🎯 Detalhamento por Competência
+                        </h4>
                         {Object.entries(result.competencies).map(([key, value], idx) => (
-                            <div key={idx} style={{ marginBottom: '15px', backgroundColor: '#111827', padding: '10px', borderRadius: '8px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                                    <strong style={{ color: '#fdba74', textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</strong>
-                                    {/* Se o valor for número, mostra nota, se for texto, mostra texto */}
-                                    <span style={{ color: '#fff', fontWeight: 'bold' }}>
+                            <div key={idx} style={{ marginBottom: '15px', backgroundColor: '#111827', padding: '15px', borderRadius: '10px', borderLeft: `4px solid ${getScoreColor(typeof value === 'object' ? value.score : 0)}` }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', alignItems: 'center' }}>
+                                    <strong style={{ color: '#fbbf24', textTransform: 'capitalize', fontSize: '0.95rem' }}>
+                                        {key.replace(/_/g, ' ')}
+                                    </strong>
+                                    <span style={{ color: '#fff', fontWeight: 'bold', backgroundColor: '#374151', padding: '2px 8px', borderRadius: '6px', fontSize: '0.9rem' }}>
                                         {typeof value === 'object' ? value.score : value}
                                     </span>
                                 </div>
                                 {typeof value === 'object' && value.comment && (
-                                    <p style={{ fontSize: '0.9rem', color: '#9ca3af', margin: 0 }}>{value.comment}</p>
+                                    <p style={{ fontSize: '0.9rem', color: '#9ca3af', margin: 0, lineHeight: '1.4' }}>
+                                        {value.comment}
+                                    </p>
                                 )}
                             </div>
                         ))}
@@ -240,6 +327,7 @@ export default function EssayCorrector() {
               </div>
             )}
           </div>
+
         </div>
 
         <ExemplosSection ferramentaId="essay-corrector" />

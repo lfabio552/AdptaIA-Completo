@@ -3,6 +3,13 @@ import { supabase } from '../supabaseClient';
 import config from '../config';
 import HistoryList from '../components/HistoryList';
 import ExemplosSection from '../components/ExemplosSection';
+import { 
+  BriefcaseIcon, 
+  LanguageIcon, 
+  ClipboardDocumentCheckIcon, 
+  SparklesIcon,
+  ArrowPathIcon
+} from '@heroicons/react/24/solid';
 
 export default function CorporateTranslator() {
   const [text, setText] = useState('');
@@ -22,7 +29,6 @@ export default function CorporateTranslator() {
     getUser();
   }, []);
 
-  // --- OUVINTE DO HISTÓRICO ---
   useEffect(() => {
     const handleLoadFromHistory = (event) => {
       if (event.detail && event.detail.text) {
@@ -49,11 +55,7 @@ export default function CorporateTranslator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Faça login para utilizar o tradutor.');
 
-      // 1. CHAMADA API
-      // Tenta pegar do config, ou monta a URL padrão
-      const endpoint = config.ENDPOINTS.CORPORATE_TRANSLATOR || 
-                       config.ENDPOINTS.TRANSLATE_CORPORATE || 
-                       `${config.API_BASE_URL}/corporate-translator`;
+      const endpoint = config.ENDPOINTS.CORPORATE_TRANSLATOR || `${config.API_BASE_URL}/corporate-translator`;
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -61,7 +63,7 @@ export default function CorporateTranslator() {
         body: JSON.stringify({
           text,
           tone,
-          target_lang: targetLang, // Envia o idioma para o backend
+          target_lang: targetLang,
           user_id: user.id
         }),
       });
@@ -71,20 +73,16 @@ export default function CorporateTranslator() {
 
       setTranslatedText(data.translated_text || data.translation);
 
-      // 2. SALVAR HISTÓRICO (MANUAL E SEGURO)
       try {
         await fetch(`${config.API_BASE_URL}/save-history`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             user_id: user.id,
-            tool_type: 'translator', // Backend converte para "Tradutor Corporativo"
+            tool_type: 'translator',
             input_data: text,
             output_data: data.translated_text || data.translation,
-            metadata: { 
-                tone: tone, 
-                lang: targetLang 
-            }
+            metadata: { tone: tone, lang: targetLang }
           })
         });
       } catch (histError) {
@@ -98,53 +96,77 @@ export default function CorporateTranslator() {
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(translatedText);
-    alert('Texto copiado!');
-  };
-
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#111827', color: 'white', padding: '20px' }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
-        <h1 style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: '10px' }}>
-          👔 Tradutor Corporativo & Refinador
-        </h1>
-        <p style={{ textAlign: 'center', color: '#9ca3af', marginBottom: '30px' }}>
-          Transforme rascunhos em e-mails executivos perfeitos ou traduza com terminologia de negócios.
-        </p>
+        {/* CABEÇALHO */}
+        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+          <div style={{ 
+             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+             background: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)', // Azul Executivo
+             width: '60px', height: '60px', borderRadius: '15px', marginBottom: '20px',
+             boxShadow: '0 10px 30px -10px rgba(14, 165, 233, 0.5)'
+          }}>
+            <BriefcaseIcon style={{ width: '32px', color: 'white' }} />
+          </div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+            Tradutor & Refinador Corporativo
+          </h1>
+          <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
+            Transforme rascunhos informais em e-mails e comunicados executivos de alto nível.
+          </p>
+        </div>
 
+        {/* BOTÃO HISTÓRICO */}
         {user && (
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
             <button
               onClick={() => setShowHistory(!showHistory)}
               style={{
-                padding: '8px 16px',
-                backgroundColor: showHistory ? '#7e22ce' : '#374151',
+                padding: '10px 20px',
+                backgroundColor: showHistory ? '#374151' : 'rgba(255,255,255,0.05)',
                 color: '#d1d5db',
-                border: '1px solid #4b5563',
-                borderRadius: '8px',
-                cursor: 'pointer'
+                border: '1px solid #374151',
+                borderRadius: '50px',
+                cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                fontSize: '0.9rem', fontWeight: '500'
               }}
             >
-              {showHistory ? '▲ Ocultar Histórico' : '📚 Ver Histórico'}
+              <SparklesIcon style={{ width: '16px' }} />
+              {showHistory ? 'Ocultar Histórico' : 'Ver Traduções Anteriores'}
             </button>
           </div>
         )}
 
         {showHistory && user && (
-          <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#1f2937', borderRadius: '10px' }}>
+          <div style={{ marginBottom: '40px', padding: '20px', backgroundColor: '#1f2937', borderRadius: '16px', border: '1px solid #374151' }}>
             <HistoryList user={user} toolType="translator" />
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+        {/* GRID PRINCIPAL */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
+          gap: '40px',
+          alignItems: 'start'
+        }}>
           
-          {/* Lado Esquerdo: Input */}
-          <div style={{ backgroundColor: '#1f2937', padding: '25px', borderRadius: '12px', border: '1px solid #374151' }}>
+          {/* LADO ESQUERDO: INPUT */}
+          <div style={{ 
+            backgroundColor: '#1f2937', 
+            padding: '30px', 
+            borderRadius: '20px', 
+            border: '1px solid #374151',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+          }}>
             <form onSubmit={handleTranslate}>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>Seu Rascunho:</label>
+              <div style={{ marginBottom: '25px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
+                  📝 Seu Rascunho (Informal):
+                </label>
                 <textarea
                   value={text}
                   onChange={(e) => setText(e.target.value)}
@@ -152,24 +174,27 @@ export default function CorporateTranslator() {
                   required
                   style={{
                     width: '100%',
-                    height: '250px',
+                    height: '200px',
                     padding: '15px',
-                    borderRadius: '8px',
+                    borderRadius: '12px',
                     backgroundColor: '#111827',
                     color: 'white',
                     border: '1px solid #4b5563',
-                    fontSize: '16px'
+                    fontSize: '1rem',
+                    lineHeight: '1.6',
+                    resize: 'none',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Tom de Voz</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: '#9ca3af' }}>Tom de Voz</label>
                   <select
                     value={tone}
                     onChange={(e) => setTone(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#111827', color: 'white', border: '1px solid #4b5563' }}
+                    style={{ width: '100%', padding: '12px', borderRadius: '10px', backgroundColor: '#111827', color: 'white', border: '1px solid #0ea5e9' }}
                   >
                     <option>Profissional / Formal</option>
                     <option>Liderança / Executivo</option>
@@ -180,14 +205,14 @@ export default function CorporateTranslator() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Idioma de Saída</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: '#9ca3af' }}>Idioma Final</label>
                   <select
                     value={targetLang}
                     onChange={(e) => setTargetLang(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: '6px', backgroundColor: '#111827', color: 'white', border: '1px solid #4b5563' }}
+                    style={{ width: '100%', padding: '12px', borderRadius: '10px', backgroundColor: '#111827', color: 'white', border: '1px solid #3b82f6' }}
                   >
-                    <option>Português (Melhorar Texto)</option>
-                    <option>Inglês (Business English)</option>
+                    <option>Português (Melhorar)</option>
+                    <option>Inglês (Business)</option>
                     <option>Espanhol (Corporativo)</option>
                     <option>Francês</option>
                     <option>Mandarim</option>
@@ -201,62 +226,88 @@ export default function CorporateTranslator() {
                 disabled={isLoading}
                 style={{
                   width: '100%',
-                  padding: '15px',
-                  background: 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)',
+                  padding: '16px',
+                  background: 'linear-gradient(90deg, #0ea5e9 0%, #2563eb 100%)',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '8px',
+                  borderRadius: '12px',
                   fontWeight: 'bold',
                   cursor: isLoading ? 'wait' : 'pointer',
-                  fontSize: '1.1rem'
+                  fontSize: '1.1rem',
+                  opacity: isLoading ? 0.7 : 1,
+                  boxShadow: '0 4px 15px rgba(14, 165, 233, 0.4)',
+                  transition: 'transform 0.1s'
                 }}
               >
-                {isLoading ? 'Refinando...' : '✨ Transformar Texto'}
+                {isLoading ? (
+                    <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
+                        <ArrowPathIcon style={{width: '20px', animation: 'spin 1s linear infinite'}}/> Refinando...
+                    </span>
+                ) : '✨ Transformar Texto'}
               </button>
+              
+              <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+
+              {error && (
+                <div style={{ marginTop: '20px', color: '#fca5a5', padding: '12px', backgroundColor: '#450a0a', borderRadius: '10px', fontSize: '0.9rem' }}>
+                  ⚠️ {error}
+                </div>
+              )}
             </form>
-            
-            {error && <div style={{ color: '#fca5a5', marginTop: '10px' }}>{error}</div>}
           </div>
 
-          {/* Lado Direito: Output */}
-          <div style={{ backgroundColor: '#1f2937', padding: '25px', borderRadius: '12px', border: '1px solid #374151' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <h3 style={{ margin: 0, color: '#60a5fa' }}>Resultado Profissional:</h3>
+          {/* LADO DIREITO: OUTPUT */}
+          <div style={{ 
+            backgroundColor: '#1f2937', 
+            padding: '30px', 
+            borderRadius: '20px', 
+            border: '1px solid #0ea5e9', // Borda Azul
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '450px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ color: '#7dd3fc', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.2rem' }}>
+                <LanguageIcon style={{ width: '24px' }} /> Resultado Profissional:
+              </h3>
               {translatedText && (
                 <button
-                  onClick={copyToClipboard}
+                  onClick={() => {navigator.clipboard.writeText(translatedText); alert('Copiado!');}}
                   style={{
-                    padding: '8px 12px',
+                    padding: '8px 16px',
                     backgroundColor: '#059669',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     cursor: 'pointer',
                     fontSize: '0.9rem',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    display: 'flex', alignItems: 'center', gap: '5px'
                   }}
                 >
-                  📋 Copiar
+                  <ClipboardDocumentCheckIcon style={{width: '18px'}}/> Copiar
                 </button>
               )}
             </div>
             
             <div style={{ 
-              backgroundColor: '#111827', 
-              padding: '20px', 
-              borderRadius: '8px', 
-              border: '1px solid #4b5563',
-              height: '340px',
-              overflowY: 'auto',
-              whiteSpace: 'pre-wrap',
-              color: translatedText ? '#d1d5db' : '#6b7280',
-              fontFamily: 'Georgia, serif', // Fonte mais "documento"
+              flexGrow: 1,
+              backgroundColor: '#ffffff', // Fundo branco estilo documento
+              padding: '25px', 
+              borderRadius: '12px',
+              fontFamily: "'Georgia', serif", // Fonte de documento
+              fontSize: '1.05rem',
+              color: '#1f2937', // Texto escuro para contraste
               lineHeight: '1.6',
-              fontSize: '1.05rem'
+              whiteSpace: 'pre-wrap',
+              border: '1px solid #d1d5db',
+              overflowY: 'auto',
+              maxHeight: '400px'
             }}>
-              {translatedText || 'O texto refinado ou traduzido aparecerá aqui...'}
+              {translatedText || <span style={{color: '#9ca3af', fontFamily: 'sans-serif'}}>O texto refinado aparecerá aqui...</span>}
             </div>
           </div>
+
         </div>
 
         <ExemplosSection ferramentaId="corporate-translator" />

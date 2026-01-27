@@ -24,9 +24,9 @@ export default function ExemplosSection({ ferramentaId }) {
       <p style={{ 
         textAlign: 'center', 
         color: '#9ca3af', 
-        marginBottom: '40px',
-        maxWidth: '800px',
-        marginLeft: 'auto',
+        marginBottom: '40px', 
+        maxWidth: '800px', 
+        marginLeft: 'auto', 
         marginRight: 'auto'
       }}>
         Veja como outros usuários estão usando esta ferramenta. Use os exemplos como inspiração!
@@ -34,7 +34,9 @@ export default function ExemplosSection({ ferramentaId }) {
       
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', 
+        // A MÁGICA ESTÁ AQUI: trocamos auto-fill por auto-fit
+        // Isso faz os cards esticarem para preencher o espaço vazio
+        gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
         gap: '30px',
         maxWidth: '1200px',
         margin: '0 auto'
@@ -153,142 +155,142 @@ export default function ExemplosSection({ ferramentaId }) {
             )}
             
             {/* RESULTADO GERADO */}
-<div>
-  <strong style={{ 
-    color: '#9ca3af', 
-    display: 'block', 
-    marginBottom: '8px',
-    fontSize: '0.9rem'
-  }}>
-    ✅ O que foi criado:
-  </strong>
-  
-  {/* RESULTADO: STRING SIMPLES */}
-  {typeof exemplo.resultado === 'string' ? (
-    <p style={{ 
-      color: '#d1d5db', 
-      margin: 0, 
-      fontSize: '14px',
-      lineHeight: '1.5',
-      backgroundColor: '#111827',
-      padding: '12px',
-      borderRadius: '8px'
-    }}>
-      {exemplo.resultado}
-    </p>
-  ) : 
-  
-  /* RESULTADO: SOCIAL MEDIA */
-  exemplo.resultado && exemplo.resultado.instagram ? (
-    <div style={{ 
-      backgroundColor: '#111827',
-      padding: '12px',
-      borderRadius: '8px'
-    }}>
-      <div style={{ marginBottom: '10px' }}>
-        <span style={{ color: '#d946ef', fontWeight: 'bold', fontSize: '12px' }}>Instagram:</span>
-        <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>{exemplo.resultado.instagram.substring(0, 80)}...</p>
-      </div>
-      <div style={{ marginBottom: '10px' }}>
-        <span style={{ color: '#0ea5e9', fontWeight: 'bold', fontSize: '12px' }}>LinkedIn:</span>
-        <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>{exemplo.resultado.linkedin.substring(0, 80)}...</p>
-      </div>
-      <div>
-        <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Twitter:</span>
-        <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>{exemplo.resultado.twitter.substring(0, 80)}...</p>
-      </div>
-    </div>
-  ) : 
-  
-  /* RESULTADO: CORRETOR DE REDAÇÃO */
-  exemplo.resultado && exemplo.resultado.total_score ? (
-    <div style={{ 
-      backgroundColor: '#111827',
-      padding: '12px',
-      borderRadius: '8px'
-    }}>
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        marginBottom: '10px'
-      }}>
-        <span style={{ color: '#10b981', fontWeight: 'bold' }}>Nota: {exemplo.resultado.total_score}/1000</span>
-        <span style={{ 
-          backgroundColor: exemplo.resultado.total_score >= 900 ? '#10b981' : 
-                         exemplo.resultado.total_score >= 700 ? '#f59e0b' : '#ef4444',
-          color: 'white',
-          padding: '3px 10px',
-          borderRadius: '20px',
-          fontSize: '12px'
-        }}>
-          {exemplo.resultado.total_score >= 900 ? 'Excelente' : 
-           exemplo.resultado.total_score >= 700 ? 'Bom' : 'Precisa melhorar'}
-        </span>
-      </div>
-      <p style={{ color: '#d1d5db', fontSize: '13px', margin: 0 }}>
-        {exemplo.resultado.feedback.substring(0, 100)}...
-      </p>
-    </div>
-  ) : 
-  
-  /* RESULTADO: SIMULADOR DE ENTREVISTA (NOVO!) */
-  exemplo.resultado && exemplo.resultado.questions ? (
-    <div style={{ 
-      backgroundColor: '#111827',
-      padding: '12px',
-      borderRadius: '8px'
-    }}>
-      <div style={{ marginBottom: '10px' }}>
-        <span style={{ color: '#8b5cf6', fontWeight: 'bold', fontSize: '12px' }}>📋 Perguntas Geradas:</span>
-        <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>
-          {exemplo.resultado.questions.length} perguntas com respostas ideais
-        </p>
-      </div>
-      <div style={{ marginBottom: '10px' }}>
-        <span style={{ color: '#f59e0b', fontWeight: 'bold', fontSize: '12px' }}>💡 Dicas do RH:</span>
-        <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>
-          {exemplo.resultado.tips.join(', ').substring(0, 80)}...
-        </p>
-      </div>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between',
-        fontSize: '12px',
-        color: '#9ca3af'
-      }}>
-        <span>👤 Vaga: Desenvolvedor Full-Stack</span>
-        <span>⏱️  Duração: ~30 min</span>
-      </div>
-    </div>
-  ) : 
-  
-  /* RESULTADO: QUIZ/FLASHCARDS */
-  exemplo.resultado && exemplo.resultado.questions && Array.isArray(exemplo.resultado.questions) ? (
-    <div style={{ 
-      backgroundColor: '#111827',
-      padding: '12px',
-      borderRadius: '8px'
-    }}>
-      <div style={{ marginBottom: '10px' }}>
-        <span style={{ color: '#06b6d4', fontWeight: 'bold', fontSize: '12px' }}>🧠 Quiz Gerado:</span>
-        <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>
-          {exemplo.resultado.questions.length} perguntas de múltipla escolha
-        </p>
-      </div>
-      <div style={{ 
-        display: 'inline-block',
-        backgroundColor: '#3b82f6',
-        color: 'white',
-        padding: '3px 8px',
-        borderRadius: '12px',
-        fontSize: '11px'
-      }}>
-        Sistema Solar • Ensino Fundamental
-      </div>
-    </div>
-  ) : null}
-</div>
+            <div>
+              <strong style={{ 
+                color: '#9ca3af', 
+                display: 'block', 
+                marginBottom: '8px',
+                fontSize: '0.9rem'
+              }}>
+                ✅ O que foi criado:
+              </strong>
+              
+              {/* RESULTADO: STRING SIMPLES */}
+              {typeof exemplo.resultado === 'string' ? (
+                <p style={{ 
+                  color: '#d1d5db', 
+                  margin: 0, 
+                  fontSize: '14px',
+                  lineHeight: '1.5',
+                  backgroundColor: '#111827',
+                  padding: '12px',
+                  borderRadius: '8px'
+                }}>
+                  {exemplo.resultado}
+                </p>
+              ) : 
+              
+              /* RESULTADO: SOCIAL MEDIA */
+              exemplo.resultado && exemplo.resultado.instagram ? (
+                <div style={{ 
+                  backgroundColor: '#111827',
+                  padding: '12px',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ color: '#d946ef', fontWeight: 'bold', fontSize: '12px' }}>Instagram:</span>
+                    <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>{exemplo.resultado.instagram.substring(0, 80)}...</p>
+                  </div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ color: '#0ea5e9', fontWeight: 'bold', fontSize: '12px' }}>LinkedIn:</span>
+                    <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>{exemplo.resultado.linkedin.substring(0, 80)}...</p>
+                  </div>
+                  <div>
+                    <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Twitter:</span>
+                    <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>{exemplo.resultado.twitter.substring(0, 80)}...</p>
+                  </div>
+                </div>
+              ) : 
+              
+              /* RESULTADO: CORRETOR DE REDAÇÃO */
+              exemplo.resultado && exemplo.resultado.total_score ? (
+                <div style={{ 
+                  backgroundColor: '#111827',
+                  padding: '12px',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    marginBottom: '10px'
+                  }}>
+                    <span style={{ color: '#10b981', fontWeight: 'bold' }}>Nota: {exemplo.resultado.total_score}/1000</span>
+                    <span style={{ 
+                      backgroundColor: exemplo.resultado.total_score >= 900 ? '#10b981' : 
+                                       exemplo.resultado.total_score >= 700 ? '#f59e0b' : '#ef4444',
+                      color: 'white',
+                      padding: '3px 10px',
+                      borderRadius: '20px',
+                      fontSize: '12px'
+                    }}>
+                      {exemplo.resultado.total_score >= 900 ? 'Excelente' : 
+                       exemplo.resultado.total_score >= 700 ? 'Bom' : 'Precisa melhorar'}
+                    </span>
+                  </div>
+                  <p style={{ color: '#d1d5db', fontSize: '13px', margin: 0 }}>
+                    {exemplo.resultado.feedback.substring(0, 100)}...
+                  </p>
+                </div>
+              ) : 
+              
+              /* RESULTADO: SIMULADOR DE ENTREVISTA */
+              exemplo.resultado && exemplo.resultado.questions ? (
+                <div style={{ 
+                  backgroundColor: '#111827',
+                  padding: '12px',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ color: '#8b5cf6', fontWeight: 'bold', fontSize: '12px' }}>📋 Perguntas Geradas:</span>
+                    <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>
+                      {exemplo.resultado.questions.length} perguntas com respostas ideais
+                    </p>
+                  </div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ color: '#f59e0b', fontWeight: 'bold', fontSize: '12px' }}>💡 Dicas do RH:</span>
+                    <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>
+                      {exemplo.resultado.tips.join(', ').substring(0, 80)}...
+                    </p>
+                  </div>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    fontSize: '12px',
+                    color: '#9ca3af'
+                  }}>
+                    <span>👤 Vaga: Desenvolvedor Full-Stack</span>
+                    <span>⏱️  Duração: ~30 min</span>
+                  </div>
+                </div>
+              ) : 
+              
+              /* RESULTADO: QUIZ/FLASHCARDS */
+              exemplo.resultado && exemplo.resultado.questions && Array.isArray(exemplo.resultado.questions) ? (
+                <div style={{ 
+                  backgroundColor: '#111827',
+                  padding: '12px',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ color: '#06b6d4', fontWeight: 'bold', fontSize: '12px' }}>🧠 Quiz Gerado:</span>
+                    <p style={{ color: '#d1d5db', fontSize: '13px', margin: '5px 0' }}>
+                      {exemplo.resultado.questions.length} perguntas de múltipla escolha
+                    </p>
+                  </div>
+                  <div style={{ 
+                    display: 'inline-block',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    padding: '3px 8px',
+                    borderRadius: '12px',
+                    fontSize: '11px'
+                  }}>
+                    Sistema Solar • Ensino Fundamental
+                  </div>
+                </div>
+              ) : null}
+            </div>
             
             {/* BOTÃO DE AÇÃO */}
             <button 

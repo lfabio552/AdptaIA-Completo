@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import '../App.css';
 import { supabase } from '../supabaseClient';
 import ExemplosSection from '../components/ExemplosSection';
 import config from '../config';
 import { saveToHistory, TOOL_CONFIGS } from '../utils/saveToHistory';
 import HistoryList from '../components/HistoryList';
+import { 
+  PhotoIcon, 
+  ArrowDownTrayIcon, 
+  ClipboardIcon,
+  SparklesIcon
+} from '@heroicons/react/24/solid';
 
 export default function ImageGenerator() {
-  // Estados principais
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('realistic');
   const [imageUrl, setImageUrl] = useState('');
@@ -16,7 +20,6 @@ export default function ImageGenerator() {
   const [user, setUser] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Estilos disponíveis
   const styles = {
     realistic: "Fotorrealista, detalhado, 8K",
     cinematic: "Cinematográfico, iluminação dramática, filme",
@@ -26,7 +29,6 @@ export default function ImageGenerator() {
     painting: "Pintura a óleo, texturizado, artístico"
   };
 
-  // Carregar usuário
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -35,20 +37,16 @@ export default function ImageGenerator() {
     getUser();
   }, []);
 
-  // --- NOVO: Ouvinte do Histórico (Faz o botão "Usar" funcionar) ---
   useEffect(() => {
     const handleLoadFromHistory = (event) => {
       if (event.detail && event.detail.text) {
-        setPrompt(event.detail.text); // Preenche o campo de prompt
-        setShowHistory(false); // Fecha o painel de histórico
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Sobe a tela
+        setPrompt(event.detail.text);
+        setShowHistory(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     };
-
     window.addEventListener('loadFromHistory', handleLoadFromHistory);
-    return () => {
-      window.removeEventListener('loadFromHistory', handleLoadFromHistory);
-    };
+    return () => window.removeEventListener('loadFromHistory', handleLoadFromHistory);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -62,10 +60,8 @@ export default function ImageGenerator() {
       if (!user) throw new Error('Faça login para gerar imagens.');
       setUser(user);
 
-      // Combinar prompt com estilo
       const fullPrompt = `${prompt}, ${styles[style]}, masterpiece, best quality`;
 
-      // Chamar API
       const response = await fetch(config.ENDPOINTS.GENERATE_IMAGE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,13 +72,11 @@ export default function ImageGenerator() {
       });
 
       const data = await response.json();
-
       if (response.status === 402) throw new Error(data.error);
       if (!response.ok) throw new Error(data.error || 'Erro ao gerar imagem.');
 
       setImageUrl(data.image_url);
 
-      // SALVAR HISTÓRICO
       await saveToHistory(
         user,
         TOOL_CONFIGS.IMAGE_GENERATE,
@@ -90,7 +84,6 @@ export default function ImageGenerator() {
         data.image_url,
         { 
           style: style,
-          prompt_length: fullPrompt.length,
           image_url: data.image_url,
           credits_used: 2
         }
@@ -122,163 +115,117 @@ export default function ImageGenerator() {
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      backgroundColor: '#111827', 
-      color: 'white',
-      fontFamily: 'sans-serif'
-    }}>
-      
-      {/* CONTEÚDO PRINCIPAL */}
-      <div style={{ 
-        padding: '20px',
-        maxWidth: '1200px',
-        margin: '0 auto'
-      }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
-        {/* HEADER */}
-        <div style={{ 
-          marginBottom: '40px',
-          textAlign: 'center'
-        }}>
-          <h1 style={{ 
-            fontSize: '2.5rem', 
-            color: '#fff', 
-            marginBottom: '10px' 
-          }}>
-            🎨 Gerador de Imagens com IA
-          </h1>
-          <p style={{ 
-            color: '#9ca3af', 
-            fontSize: '1.1rem',
-            marginBottom: '10px'
-          }}>
-            Descreva sua ideia e receba uma imagem única em segundos!
-          </p>
+        {/* CABEÇALHO */}
+        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
           <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            gap: '20px',
-            fontSize: '0.9rem'
+             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+             background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', 
+             width: '60px', height: '60px', borderRadius: '15px', marginBottom: '20px',
+             boxShadow: '0 10px 30px -10px rgba(59, 130, 246, 0.5)'
           }}>
-            <span style={{ color: '#fbbf24' }}>⚠️ Custa 2 créditos</span>
-            <span style={{ color: '#9ca3af' }}>•</span>
-            <span style={{ color: '#9ca3af' }}>Stable Diffusion SDXL</span>
+            <PhotoIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          
-          {/* Botão de histórico */}
-          {user && (
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+            Gerador de Imagens (Stable Diffusion)
+          </h1>
+          <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
+            Transforme suas ideias em arte digital de alta resolução em segundos.
+          </p>
+          <div style={{ marginTop: '15px', fontSize: '0.9rem', color: '#fbbf24', fontWeight: 'bold' }}>
+            ⚠️ Custa 2 créditos por geração
+          </div>
+        </div>
+
+        {/* BOTÃO HISTÓRICO */}
+        {user && (
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
             <button
               onClick={() => setShowHistory(!showHistory)}
               style={{
-                marginTop: '20px',
-                padding: '8px 16px',
-                backgroundColor: showHistory ? '#7e22ce' : '#374151',
+                padding: '10px 20px',
+                backgroundColor: showHistory ? '#374151' : 'rgba(255,255,255,0.05)',
                 color: '#d1d5db',
-                border: '1px solid #4b5563',
-                borderRadius: '8px',
+                border: '1px solid #374151',
+                borderRadius: '50px',
                 cursor: 'pointer',
-                fontSize: '14px',
-                transition: 'all 0.2s'
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                fontSize: '0.9rem', fontWeight: '500'
               }}
             >
-              {showHistory ? '▲ Ocultar Histórico' : '📚 Ver Meu Histórico'}
+              <SparklesIcon style={{ width: '16px' }} />
+              {showHistory ? 'Ocultar Histórico' : 'Ver Minhas Criações'}
             </button>
-          )}
-        </div>
-        
-        {/* Seção de histórico */}
+          </div>
+        )}
+
         {showHistory && user && (
-          <div style={{
-            marginBottom: '30px',
-            padding: '20px',
-            backgroundColor: '#1f2937',
-            borderRadius: '10px',
-            border: '1px solid #374151'
-          }}>
+          <div style={{ marginBottom: '40px', padding: '20px', backgroundColor: '#1f2937', borderRadius: '16px', border: '1px solid #374151' }}>
             <HistoryList user={user} toolType="image" />
           </div>
         )}
-        
-        {/* FORMULÁRIO E CONTEÚDO */}
+
+        {/* GRID PRINCIPAL */}
         <div style={{ 
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '30px'
+          display: 'grid', 
+          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', // Responsivo
+          gap: '40px',
+          alignItems: 'start'
         }}>
           
-          {/* FORMULÁRIO */}
+          {/* LADO ESQUERDO: CONTROLES */}
           <div style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
-            borderRadius: '12px',
-            border: '1px solid #374151'
+            borderRadius: '20px', 
+            border: '1px solid #374151',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
             <form onSubmit={handleSubmit}>
-              
-              {/* CAMPO DE PROMPT */}
-              <div style={{ marginBottom: '30px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  color: '#d1d5db', 
-                  fontSize: '1.1rem',
-                  marginBottom: '15px',
-                  fontWeight: '500'
-                }}>
-                  ✨ Descreva a imagem que quer criar:
+              <div style={{ marginBottom: '25px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
+                  Descreva sua Imagem:
                 </label>
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Ex: Um dragão de cristal azul sobrevoando uma cidade cyberpunk à noite, com arranha-céus de neon e chuva..."
+                  placeholder="Ex: Um astronauta andando em Marte com estilo cyberpunk..."
                   required
-                  style={{ 
+                  style={{
                     width: '100%',
-                    minHeight: '150px',
+                    height: '140px',
                     padding: '15px',
-                    borderRadius: '8px',
-                    border: '1px solid #4b5563',
+                    borderRadius: '12px',
                     backgroundColor: '#111827',
                     color: 'white',
-                    fontSize: '16px',
-                    resize: 'vertical',
-                    fontFamily: 'inherit'
+                    border: '1px solid #4b5563',
+                    fontSize: '1rem',
+                    lineHeight: '1.5',
+                    resize: 'none',
+                    boxSizing: 'border-box' // Importante para não estourar
                   }}
                 />
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  marginTop: '10px'
-                }}>
-                  <span style={{ color: '#6b7280', fontSize: '14px' }}>
-                    {prompt.length}/500 caracteres
-                  </span>
-                </div>
               </div>
 
-              {/* SELEÇÃO DE ESTILO */}
-              <div style={{ marginBottom: '40px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  color: '#d1d5db', 
-                  fontSize: '1.1rem',
-                  marginBottom: '15px',
-                  fontWeight: '500'
-                }}>
-                  🎭 Estilo da imagem:
+              <div style={{ marginBottom: '30px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
+                  Estilo Visual:
                 </label>
-                <select 
-                  value={style} 
+                <select
+                  value={style}
                   onChange={(e) => setStyle(e.target.value)}
-                  style={{ 
-                    width: '100%',
-                    padding: '15px',
-                    borderRadius: '8px',
-                    border: '1px solid #4b5563',
-                    backgroundColor: '#111827',
-                    color: 'white',
-                    fontSize: '16px',
-                    fontFamily: 'inherit'
+                  style={{
+                      width: '100%',
+                      padding: '14px',
+                      borderRadius: '12px',
+                      backgroundColor: '#111827',
+                      color: 'white',
+                      border: '1px solid #8b5cf6', 
+                      fontSize: '1rem',
+                      cursor: 'pointer',
+                      boxSizing: 'border-box'
                   }}
                 >
                   <option value="realistic">🎯 Realista (Fotorrealista)</option>
@@ -288,288 +235,128 @@ export default function ImageGenerator() {
                   <option value="cyberpunk">🤖 Cyberpunk</option>
                   <option value="painting">🖼️ Pintura Artística</option>
                 </select>
-                <p style={{ 
-                  marginTop: '10px', 
-                  color: '#9ca3af', 
-                  fontSize: '14px'
-                }}>
-                  Estilo selecionado: <span style={{ color: '#d8b4fe' }}>{styles[style]}</span>
-                </p>
               </div>
 
-              {/* BOTÃO DE SUBMIT */}
-              <button 
-                type="submit" 
-                disabled={isLoading || prompt.length < 10}
-                style={{ 
+              <button
+                type="submit"
+                disabled={isLoading}
+                style={{
                   width: '100%',
-                  padding: '18px',
-                  background: 'linear-gradient(90deg, #7e22ce 0%, #a855f7 100%)',
+                  padding: '16px',
+                  background: 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '10px',
-                  fontSize: '1.2rem',
+                  borderRadius: '12px',
                   fontWeight: 'bold',
-                  cursor: (isLoading || prompt.length < 10) ? 'not-allowed' : 'pointer',
-                  opacity: (isLoading || prompt.length < 10) ? 0.6 : 1,
-                  transition: 'all 0.3s'
+                  cursor: isLoading ? 'wait' : 'pointer',
+                  fontSize: '1.1rem',
+                  boxShadow: '0 10px 20px -5px rgba(59, 130, 246, 0.4)',
+                  transition: 'transform 0.1s'
                 }}
               >
-                {isLoading ? (
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                    <div style={{ 
-                      width: '20px', 
-                      height: '20px', 
-                      border: '3px solid white',
-                      borderTop: '3px solid transparent',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite'
-                    }}></div>
-                    🎨 Gerando Imagem (-2 Créditos)...
-                  </span>
-                ) : '✨ Gerar Imagem Agora'}
+                {isLoading ? '🎨 Pintando Pixels...' : '✨ Gerar Imagem'}
               </button>
-
-              {/* ESTILO PARA ANIMAÇÃO DE SPIN */}
-              <style>{`
-                @keyframes spin {
-                  0% { transform: rotate(0deg); }
-                  100% { transform: rotate(360deg); }
-                }
-              `}</style>
-
-              {/* MENSAGEM DE ERRO */}
+              
               {error && (
-                <div style={{ 
-                  marginTop: '30px',
-                  padding: '20px',
-                  backgroundColor: '#450a0a',
-                  border: '1px solid #dc2626',
-                  borderRadius: '8px'
-                }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '10px',
-                    color: '#fca5a5',
-                    marginBottom: '10px',
-                    fontWeight: '500'
-                  }}>
-                    ⚠️ Erro
-                  </div>
-                  <p style={{ color: '#fecaca', fontSize: '15px' }}>{error}</p>
+                <div style={{ marginTop: '20px', color: '#fca5a5', padding: '15px', backgroundColor: '#450a0a', borderRadius: '10px', border: '1px solid #ef4444' }}>
+                  ⚠️ {error}
                 </div>
               )}
             </form>
           </div>
 
-          {/* IMAGEM GERADA */}
-          {imageUrl && (
-            <div style={{ 
-              backgroundColor: '#1f2937', 
-              padding: '30px', 
-              borderRadius: '12px',
-              border: '1px solid #374151'
-            }}>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '25px'
-              }}>
-                <h3 style={{ 
-                  fontSize: '1.5rem', 
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
-                  ✅ Sua Imagem Pronta!
-                </h3>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    onClick={downloadImage}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#059669',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    ⬇️ Baixar
-                  </button>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(imageUrl)}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    📋 Copiar Link
-                  </button>
-                </div>
-              </div>
-              
-              {/* CONTAINER DA IMAGEM */}
-              <div style={{ 
-                backgroundColor: '#111827',
-                borderRadius: '10px',
-                overflow: 'hidden',
-                border: '1px solid #4b5563',
-                marginBottom: '25px'
-              }}>
-                <img 
-                  src={imageUrl} 
-                  alt="Imagem gerada por IA"
-                  style={{ 
-                    width: '100%',
-                    maxHeight: '500px',
-                    objectFit: 'contain',
-                    display: 'block'
-                  }}
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = 'https://placehold.co/600x400/1f2937/9ca3af?text=Imagem+Indisponível';
-                  }}
-                />
-              </div>
-              
-              {/* PROMPT USADO */}
-              <div style={{ 
-                padding: '20px',
-                backgroundColor: '#111827',
-                borderRadius: '10px'
-              }}>
-                <h4 style={{ 
-                  color: '#d1d5db', 
-                  marginBottom: '10px',
-                  fontSize: '1rem'
-                }}>
-                  📝 Prompt usado:
-                </h4>
-                <p style={{ 
-                  color: '#9ca3af', 
-                  fontSize: '14px',
-                  lineHeight: '1.5'
-                }}>
-                  {prompt}, {styles[style]}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* SEÇÃO DE EXEMPLOS */}
-          <ExemplosSection ferramentaId="gerar-imagem-completa" />
-
-          {/* INFORMAÇÕES ADICIONAIS */}
+          {/* LADO DIREITO: RESULTADO VISUAL */}
           <div style={{ 
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '20px',
-            marginTop: '30px'
+            backgroundColor: '#1f2937', 
+            padding: '20px', 
+            borderRadius: '20px', 
+            border: '1px solid #8b5cf6',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '500px', // Altura mínima para ficar bonito
+            justifyContent: 'center',
+            alignItems: 'center'
           }}>
-            
-            {/* DICAS */}
-            <div style={{ 
-              backgroundColor: '#1f2937', 
-              padding: '25px', 
-              borderRadius: '12px',
-              border: '1px solid #374151'
-            }}>
-              <h3 style={{ 
-                fontSize: '1.2rem', 
-                color: '#fff',
-                marginBottom: '15px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}>
-                💡 Dicas para prompts
-              </h3>
-              <ul style={{ 
-                listStyle: 'none', 
-                padding: 0,
-                margin: 0
-              }}>
-                {[
-                  'Use adjetivos: "épico, detalhado, cinematográfico"',
-                  'Especifique estilo: "fotorrealista, anime, pintura a óleo"',
-                  'Descreva luz: "luz do pôr do sol, neon, dramática"',
-                  'Mencione composição: "close-up, plano aberto, perspectiva"',
-                  'Adicione qualidade: "8K, UHD, altamente detalhado"'
-                ].map((tip, idx) => (
-                  <li key={idx} style={{ 
-                    display: 'flex', 
-                    alignItems: 'flex-start',
-                    gap: '10px',
-                    marginBottom: '12px',
-                    color: '#d1d5db',
-                    fontSize: '14px'
-                  }}>
-                    <span style={{ color: '#a855f7' }}>•</span>
-                    <span>{tip}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* INFORMAÇÕES TÉCNICAS */}
-            <div style={{ 
-              backgroundColor: '#1f2937', 
-              padding: '25px', 
-              borderRadius: '12px',
-              border: '1px solid #374151'
-            }}>
-              <h3 style={{ 
-                fontSize: '1.2rem', 
-                color: '#fff',
-                marginBottom: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}>
-                ⚙️ Informações Técnicas
-              </h3>
-              <div style={{ display: 'grid', gap: '15px' }}>
-                {[
-                  { label: 'Modelo:', value: 'Stable Diffusion SDXL' },
-                  { label: 'Resolução:', value: '1024×1024 px' },
-                  { label: 'Tempo médio:', value: '15-30 segundos' },
-                  { label: 'Custo:', value: '2 créditos/imagem' }
-                ].map((item, idx) => (
-                  <div key={idx} style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <span style={{ color: '#9ca3af', fontSize: '14px' }}>{item.label}</span>
-                    <span style={{ 
-                      color: item.label === 'Custo:' ? '#fbbf24' : '#fff',
-                      fontSize: '14px',
-                      fontWeight: item.label === 'Custo:' ? '600' : '400'
-                    }}>
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {imageUrl ? (
+                <>
+                    <img 
+                        src={imageUrl} 
+                        alt="Gerada por IA" 
+                        style={{ width: '100%', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} 
+                    />
+                    <div style={{ display: 'flex', gap: '15px', marginTop: '20px', width: '100%' }}>
+                        <button 
+                            onClick={downloadImage}
+                            style={{ 
+                                flex: 1, padding: '12px', backgroundColor: '#059669', color: 'white', 
+                                border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                            }}
+                        >
+                            <ArrowDownTrayIcon style={{width: '20px'}}/> Baixar
+                        </button>
+                        <button 
+                            onClick={() => {navigator.clipboard.writeText(imageUrl); alert('Link copiado!');}}
+                            style={{ 
+                                flex: 1, padding: '12px', backgroundColor: '#374151', color: 'white', 
+                                border: '1px solid #4b5563', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                            }}
+                        >
+                            <ClipboardIcon style={{width: '20px'}}/> Copiar Link
+                        </button>
+                    </div>
+                </>
+            ) : (
+                <div style={{ textAlign: 'center', color: '#6b7280' }}>
+                    <div style={{ 
+                        fontSize: '60px', marginBottom: '20px', opacity: 0.3
+                    }}>🖼️</div>
+                    <p style={{ fontSize: '1.1rem' }}>Sua arte aparecerá aqui.</p>
+                    <p style={{ fontSize: '0.9rem' }}>Preencha o prompt e clique em gerar.</p>
+                </div>
+            )}
           </div>
+
         </div>
+
+        {/* SEÇÃO INFERIOR: DICAS E EXEMPLOS */}
+        <div style={{ marginTop: '60px' }}>
+            <ExemplosSection ferramentaId="gerar-imagem-completa" />
+            
+            <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+                gap: '20px', 
+                marginTop: '40px' 
+            }}>
+                <div style={{ backgroundColor: '#1f2937', padding: '25px', borderRadius: '16px', border: '1px solid #374151' }}>
+                    <h3 style={{ color: '#fff', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        💡 Dicas de Ouro
+                    </h3>
+                    <ul style={{ paddingLeft: '20px', color: '#d1d5db', lineHeight: '1.8' }}>
+                        <li>Use adjetivos fortes: "épico, detalhado, cinematográfico".</li>
+                        <li>Especifique a luz: "luz de neon, pôr do sol, dramática".</li>
+                        <li>Peça qualidade: "8k, masterpiece, alta resolução".</li>
+                    </ul>
+                </div>
+                <div style={{ backgroundColor: '#1f2937', padding: '25px', borderRadius: '16px', border: '1px solid #374151' }}>
+                    <h3 style={{ color: '#fff', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        ⚙️ Info Técnica
+                    </h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#d1d5db' }}>
+                        <span>Modelo:</span> <span style={{fontWeight: 'bold'}}>Stable Diffusion XL</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#d1d5db' }}>
+                        <span>Resolução:</span> <span style={{fontWeight: 'bold'}}>1024x1024</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fbbf24' }}>
+                        <span>Custo:</span> <span style={{fontWeight: 'bold'}}>2 Créditos</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
       </div>
     </div>
   );
