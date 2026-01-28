@@ -7,22 +7,22 @@ export const exemplosPorFerramenta = {
     {
       id: 1,
       titulo: "📊 Controle Financeiro Pessoal",
-      prompt: "Crie uma planilha de controle financeiro mensal com colunas: Data, Descrição, Categoria (Alimentação, Transporte, Lazer, Contas), Valor, Tipo (Entrada/Saída). Adicione totais por categoria e gráfico de pizza.",
-      imagem: "https://placehold.co/600x400/3b82f6/ffffff?text=Planilha+Financeira",
+      prompt: "Crie uma planilha de controle financeiro mensal com colunas: Data, Descrição, Categoria (Alimentação, Transporte, Lazer, Contas), Valor, Tipo (Entrada/Saída).",
+      imagem: "/img/planilha-vendas.png",
       resultado: "Planilha com fórmulas de soma automática, tabela dinâmica por categoria e gráfico visual."
     },
     {
       id: 2,
       titulo: "📦 Controle de Estoque para Loja",
       prompt: "Planilha para loja de eletrônicos com: Código SKU, Nome do Produto, Quantidade em Estoque, Preço de Custo, Preço de Venda, Fornecedor. Adicione alerta condicional (vermelho) para estoque abaixo de 10 unidades.",
-      imagem: "https://placehold.co/600x400/10b981/ffffff?text=Controle+Estoque",
+      imagem: "/img/planilha-exemplo2.png",
       resultado: "Sistema completo com 50 produtos, fórmulas de lucro automático e formatação condicional."
     },
     {
       id: 3,
       titulo: "📈 Dashboard de Vendas Mensais",
       prompt: "Dashboard para equipe de vendas: Mês, Vendedor, Produto, Quantidade Vendida, Valor Total, Comissão (5%). Calcule ranking de vendedores e métricas de crescimento.",
-      imagem: "https://placehold.co/600x400/8b5cf6/ffffff?text=Dashboard+Vendas",
+      imagem: "/img/planilha-exemplo3.png",
       resultado: "Dashboard interativo com gráficos de barras, cálculo de comissão e relatório mensal."
     }
   ],
@@ -63,14 +63,14 @@ export const exemplosPorFerramenta = {
       id: 1,
       titulo: "📚 Trabalho Acadêmico Completo",
       prompt: "Formate este texto nas normas ABNT para um trabalho de conclusão de curso: margens 3cm, fonte Arial 12, espaçamento 1.5, citações no padrão autor-data.",
-      imagem: "https://placehold.co/600x400/ef4444/ffffff?text=Formatação+ABNT",
+      imagem: null,
       resultado: "Texto formatado com capa, folha de rosto, sumário automático, headers com numeração, referências bibliográficas no padrão ABNT e paginação correta."
     },
     {
       id: 2,
       titulo: "🔬 Artigo Científico",
       prompt: "Converta este relatório em formato de artigo científico ABNT: resumo em português e inglês, palavras-chave, seções metodologia, resultados, discussão.",
-      imagem: "https://placehold.co/600x400/0ea5e9/ffffff?text=Artigo+Científico",
+      imagem: null,
       resultado: "Artigo estruturado com abstract, keywords, introdução, metodologia, resultados, discussão, conclusões e referências formatadas."
     }
   ],
@@ -143,14 +143,14 @@ export const exemplosPorFerramenta = {
       id: 1,
       titulo: "🎨 Retrato Cinematográfico",
       prompt: "Crie um prompt para um retrato cinematográfico de uma guerreira viking com cabelos ruços, cicatrizes de batalha, em uma floresta nevada ao amanhecer.",
-      imagem: "https://placehold.co/600x400/7e22ce/ffffff?text=Prompt+Cinematográfico",
+      imagem: null,
       resultado: "cinematic portrait of a fierce red-haired viking warrior with battle scars, standing in a snowy forest at dawn, dramatic lighting, photorealistic, 8k, highly detailed, art by Greg Rutkowski and Artgerm"
     },
     {
       id: 2,
       titulo: "🏙️ Cena Cyberpunk Urbana",
       prompt: "Prompt para uma cena de rua cyberpunk à noite, com chuva, neons coloridos, hovercars voando e multidão com guarda-chuvas tecnológicos.",
-      imagem: "https://placehold.co/600x400/06b6d4/ffffff?text=Cyberpunk+Street",
+      imagem: null,
       resultado: "cyberpunk street scene at night with rain, colorful neon signs reflecting on wet asphalt, flying hovercars, crowded street with people holding high-tech umbrellas, cinematic lighting, Blade Runner style, wide shot, 8k"
     }
   ],
@@ -192,7 +192,7 @@ export const exemplosPorFerramenta = {
       id: 1,
       titulo: "🧪 Quiz sobre Sistema Solar",
       prompt: "Crie um quiz de 5 perguntas sobre o sistema solar para estudantes do ensino fundamental.",
-      imagem: "https://placehold.co/600x400/f59e0b/ffffff?text=Quiz+Sistema+Solar",
+      imagem: null,
       resultado: {
         questions: [
           {
@@ -233,7 +233,7 @@ export const exemplosPorFerramenta = {
       id: 1,
       titulo: "🎬 Cena de Ação em Slow Motion",
       prompt: "Cena: Herói pulando entre prédios em chuva. Estilo: Cinematográfico. Câmera: Slow motion 120fps. Iluminação: Neon refletido na chuva.",
-      imagem: "https://placehold.co/600x400/ef4444/ffffff?text=Cena+Ação+Veo",
+      imagem: null,
       resultado: "A dynamic superhero leaping between skyscrapers in heavy rain, slow motion 120fps, cinematic lighting with neon reflections on wet surfaces, dramatic camera angles, realistic physics, detailed rain droplets, epic soundtrack with synthwave elements"
     }
   ],
@@ -246,7 +246,7 @@ export const exemplosPorFerramenta = {
       id: 1,
       titulo: "📄 Contrato de Prestação de Serviços",
       prompt: "Documento: Contrato de 15 páginas sobre prestação de serviços de desenvolvimento de software.",
-      imagem: "https://placehold.co/600x400/10b981/ffffff?text=Contrato+PDF",
+      imagem: null,
       resultado: "Após processar seu contrato, posso responder perguntas sobre: prazos de entrega, cláusulas de confidencialidade, termos de pagamento, direitos de propriedade intelectual e multas por atraso."
     }
   ],
@@ -259,7 +259,7 @@ export const exemplosPorFerramenta = {
       id: 1,
       titulo: "📖 Resumo de Artigo Científico",
       prompt: "Artigo de 10 páginas sobre os impactos da inteligência artificial no mercado de trabalho futuro.",
-      imagem: "https://placehold.co/600x400/8b5cf6/ffffff?text=Resumo+Artigo",
+      imagem: null,
       resultado: "O artigo analisa como a IA automatizará 30% das tarefas repetitivas até 2030, criando demanda por habilidades socioemocionais. Conclui que a requalificação profissional será crucial, sugerindo políticas públicas de educação continuada."
     }
   ]

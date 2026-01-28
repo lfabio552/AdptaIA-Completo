@@ -422,6 +422,15 @@ export default function HomePage() {
             <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'white', textDecoration: 'none' }}>Adapta IA</span>
         </Link>
         
+        {/* === LINK RESTAURADO AQUI === */}
+        {windowWidth > 768 && (
+          <div style={{ display: 'flex', gap: '25px', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+            <Link to="/precos" style={{ color: '#d1d5db', textDecoration: 'none', fontWeight: '500', fontSize: '0.95rem' }}>
+              Planos e Preços
+            </Link>
+          </div>
+        )}
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           {user && (
             <Link to="/meu-historico" style={{ 

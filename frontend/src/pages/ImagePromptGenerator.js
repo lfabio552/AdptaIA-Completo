@@ -106,7 +106,30 @@ export default function ImagePromptGenerator() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA AQUI: Fundo com gradiente radial sutil usando o rosa da ferramenta
+      background: 'radial-gradient(circle at 50% 0%, rgba(236, 72, 153, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO (Para alinhar a altura dos quadrados) */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 40px;
+          align-items: stretch;
+          grid-template-columns: 1fr;
+        }
+        @media (min-width: 768px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+      `}</style>
+
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
@@ -156,12 +179,7 @@ export default function ImagePromptGenerator() {
         )}
 
         {/* GRID PRINCIPAL */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr', 
-          gap: '40px',
-          alignItems: 'start'
-        }}>
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: CONTROLES */}
           <div style={{ 
@@ -169,9 +187,12 @@ export default function ImagePromptGenerator() {
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            display: 'flex', 
+            flexDirection: 'column',
+            height: '100%'
           }}>
-            <form onSubmit={handleGenerate}>
+            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
               <div style={{ marginBottom: '25px' }}>
                 <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
                   Descreva sua Ideia:
@@ -222,25 +243,27 @@ export default function ImagePromptGenerator() {
                 </select>
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                style={{
-                  width: '100%',
-                  padding: '16px',
-                  background: 'linear-gradient(90deg, #ec4899 0%, #db2777 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontWeight: 'bold',
-                  cursor: isLoading ? 'wait' : 'pointer',
-                  fontSize: '1.1rem',
-                  boxShadow: '0 10px 20px -5px rgba(236, 72, 153, 0.4)',
-                  transition: 'transform 0.1s'
-                }}
-              >
-                {isLoading ? '✨ Criando Mágica...' : 'Gerar Prompt'}
-              </button>
+              <div style={{ marginTop: 'auto' }}>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    background: 'linear-gradient(90deg, #ec4899 0%, #db2777 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontWeight: 'bold',
+                    cursor: isLoading ? 'wait' : 'pointer',
+                    fontSize: '1.1rem',
+                    boxShadow: '0 10px 20px -5px rgba(236, 72, 153, 0.4)',
+                    transition: 'transform 0.1s'
+                  }}
+                >
+                  {isLoading ? '✨ Criando Mágica...' : 'Gerar Prompt'}
+                </button>
+              </div>
             </form>
             
             {errorMessage && (
@@ -255,10 +278,10 @@ export default function ImagePromptGenerator() {
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
-            border: '1px solid #ec4899', // Borda Rosa para destacar o output
+            border: '1px solid #ec4899',
             display: 'flex',
             flexDirection: 'column',
-            minHeight: '400px'
+            height: '100%'
           }}>
             <h3 style={{ color: '#fbcfe8', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <SparklesIcon style={{ width: '24px' }} /> Resultado:
@@ -275,7 +298,8 @@ export default function ImagePromptGenerator() {
               lineHeight: '1.6',
               whiteSpace: 'pre-wrap',
               border: '1px solid #374151',
-              marginBottom: '20px'
+              marginBottom: '20px',
+              minHeight: '200px'
             }}>
               {generatedPrompt || <span style={{color: '#4b5563'}}>O prompt otimizado aparecerá aqui...</span>}
             </div>
@@ -305,7 +329,8 @@ export default function ImagePromptGenerator() {
 
         </div>
 
-        <ExemplosSection ferramentaId="image-prompt" />
+        {/* Seção de Exemplos (com ID corrigido) */}
+        <ExemplosSection ferramentaId="gerar-imagem" />
       </div>
     </div>
   );

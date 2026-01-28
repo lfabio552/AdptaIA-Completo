@@ -301,14 +301,19 @@ def download_docx():
         return send_file(f, as_attachment=True, download_name='doc.docx', mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 7. GERADOR DE PLANILHAS (VERSÃO BLINDADA V2)
+# 7. GERADOR DE PLANILHAS (VERSÃO V5 - FÓRMULAS REAIS E CORREÇÃO DE ACENTOS)
 @app.route('/generate-spreadsheet', methods=['POST'])
 def generate_spreadsheet():
-    # Imports locais para garantir que funcionem
     import pandas as pd
     import io
     import json
-    # O send_file precisa estar importado lá no topo do arquivo: from flask import send_file
+    import re
+    # Biblioteca para normalizar texto (tira acentos)
+    import unicodedata
+
+    def remove_acentos(input_str):
+        nfkd_form = unicodedata.normalize('NFKD', input_str)
+        return "".join([c for c in nfkd_form if not unicodedata.combining(c)])
 
     if not model: return jsonify({'error': 'Erro modelo'}), 500
     try:
@@ -317,82 +322,113 @@ def generate_spreadsheet():
         
         print(f"📊 Gerando planilha para: {prompt_user}")
 
-        # Prompt Reforçado para JSON Limpo
         ai_prompt = f"""
-        Você é um Gerador de Dados para Excel (JSON Generator).
-        
+        Você é um Gerador de Dados para Excel.
         PEDIDO: "{prompt_user}"
         
+        Gere um JSON com 5 linhas de dados fictícios.
         REGRAS:
-        1. Responda APENAS com um JSON válido. Sem Markdown (```json), sem explicações.
-        2. O JSON deve ser uma LISTA de objetos, onde cada objeto é uma linha da planilha.
-        3. Use chaves como nomes das colunas.
-        4. Gere 5 linhas de dados de exemplo.
-        
-        Exemplo de Saída:
-        [
-            {{"Data": "01/01/2024", "Item": "Bolo", "Valor": 50}},
-            {{"Data": "02/01/2024", "Item": "Doce", "Valor": 10}}
-        ]
+        1. Use nomes de colunas claros (ex: "Preço Unitário", "Quantidade", "Total", "Comissão").
+        2. Se tiver porcentagem, coloque no nome da coluna (ex: "Comissão 5%").
+        3. Responda APENAS o JSON.
         """
         
         response = model.generate_content(ai_prompt)
         txt = response.text
         
-        # Limpeza agressiva do JSON
+        # Parse JSON (Mesma lógica robusta)
         start = txt.find('[')
         end = txt.rfind(']')
-        
         if start == -1 or end == -1:
-            print("❌ Erro: IA não gerou JSON válido (colchetes não encontrados).")
-            # Fallback: Tenta criar um dado simples para não dar erro 500
-            dados = [{"Erro": "A IA não entendeu o pedido. Tente ser mais específico."}]
+            dados = [{"Erro": "A IA não entendeu o pedido."}]
         else:
             json_str = txt[start:end+1]
             try:
                 dados = json.loads(json_str)
             except:
-                print("❌ Erro ao fazer parse do JSON. Tentando corrigir...")
-                # Tenta corrigir aspas simples para duplas (erro comum da IA)
                 try:
                     import ast
                     dados = ast.literal_eval(json_str)
                 except:
-                     dados = [{"Erro": "Formato de dados inválido gerado pela IA."}]
+                     dados = [{"Erro": "Dados inválidos."}]
 
-        # Criar DataFrame
         df = pd.DataFrame(dados)
-        
-        # Buffer para salvar o arquivo na memória RAM
         output = io.BytesIO()
         
-        # Tenta salvar usando xlsxwriter (mais bonito), se falhar usa openpyxl (padrão)
-        try:
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, index=False, sheet_name='Dados')
-                # Ajuste de colunas
-                worksheet = writer.sheets['Dados']
-                for i, col in enumerate(df.columns):
-                    width = max(df[col].astype(str).map(len).max(), len(col)) + 2
-                    worksheet.set_column(i, i, width)
-        except Exception as e_excel:
-            print(f"⚠️ Erro no XlsxWriter: {e_excel}. Tentando motor padrão...")
-            # Fallback para o motor padrão (requer openpyxl instalado)
-            df.to_excel(output, index=False)
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Relatório IA')
+            workbook  = writer.book
+            worksheet = writer.sheets['Relatório IA']
+            
+            # Formatos
+            header_fmt = workbook.add_format({'bold': True, 'fg_color': '#1e3a8a', 'font_color': 'white', 'border': 1, 'align': 'center'})
+            money_fmt = workbook.add_format({'num_format': 'R$ #,##0.00'})
+            percent_fmt = workbook.add_format({'num_format': '0.00%'})
+            
+            cols = df.columns.tolist()
+            
+            for i, col_name in enumerate(cols):
+                # Escreve cabeçalho
+                worksheet.write(0, i, col_name, header_fmt)
                 
+                # Ajusta largura
+                width = max(df[col_name].astype(str).map(len).max(), len(col_name)) + 5
+                worksheet.set_column(i, i, width)
+                
+                # Normaliza nome para detecção (sem acentos, minúsculo)
+                col_clean = remove_acentos(col_name.lower())
+                
+                col_letter = chr(65 + i) # A, B, C...
+                
+                # --- LÓGICA DE FÓRMULAS ---
+                
+                # 1. COMISSÃO ou IMPOSTO (Detecta "comissao", "taxa", "%")
+                if 'comissao' in col_clean or 'taxa' in col_clean or '%' in col_name:
+                    # Tenta achar a porcentagem no nome (ex: "5%")
+                    match = re.search(r'(\d+)%', col_name)
+                    percent_val = float(match.group(1))/100 if match else 0.05 # Padrão 5% se não achar
+                    
+                    # Assume que a base de cálculo é a coluna ANTERIOR (Valor Total)
+                    base_col_letter = chr(65 + i - 1)
+                    
+                    for row_idx in range(len(df)):
+                        excel_row = row_idx + 2
+                        # Fórmula: =ANTERIOR * 0.05
+                        formula = f'={base_col_letter}{excel_row}*{percent_val}'
+                        worksheet.write_formula(row_idx + 1, i, formula, money_fmt)
+                        
+                # 2. TOTAL (Multiplicação de Qtd * Preço)
+                elif 'total' in col_clean:
+                    qtd_idx = -1
+                    price_idx = -1
+                    
+                    # Procura colunas de Qtd e Preço
+                    for j, c in enumerate(cols):
+                        c_clean = remove_acentos(c.lower())
+                        if 'qtd' in c_clean or 'quant' in c_clean: qtd_idx = j
+                        if ('preco' in c_clean or 'unitario' in c_clean) and 'total' not in c_clean: price_idx = j
+                    
+                    if qtd_idx != -1 and price_idx != -1:
+                        qtd_letter = chr(65 + qtd_idx)
+                        price_letter = chr(65 + price_idx)
+                        for row_idx in range(len(df)):
+                            excel_row = row_idx + 2
+                            # Fórmula: =Qtd * Preço
+                            formula = f'={qtd_letter}{excel_row}*{price_letter}{excel_row}'
+                            worksheet.write_formula(row_idx + 1, i, formula, money_fmt)
+                    else:
+                        worksheet.set_column(i, i, width, money_fmt)
+
+                # Formatação de Dinheiro Genérica
+                elif 'valor' in col_clean or 'preco' in col_clean or 'custo' in col_clean or 'total' in col_clean:
+                    worksheet.set_column(i, i, width, money_fmt)
+
         output.seek(0)
-        
-        return send_file(
-            output, 
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True, 
-            download_name='planilha_gerada.xlsx'
-        )
+        return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', as_attachment=True, download_name='Planilha_Com_Formulas.xlsx')
 
     except Exception as e:
-        print(f"❌ ERRO CRÍTICO NO SERVIDOR: {str(e)}")
-        # Retorna o erro exato para o Frontend mostrar no alerta
-        return jsonify({'error': f"Erro interno: {str(e)}"}), 500
+        print(f"❌ ERRO: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 # 7. UPLOAD PDF (RAG)
