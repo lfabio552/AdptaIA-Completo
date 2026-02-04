@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserCircleIcon, LockClosedIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { FcGoogle } from 'react-icons/fc'; // Ícone do Google
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
@@ -11,6 +12,24 @@ export default function Login() {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
+  // --- NOVA FUNÇÃO: LOGIN COM GOOGLE ---
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          // Redireciona para a página de perfil após o login
+          redirectTo: `${window.location.origin}/meu-perfil`,
+        },
+      });
+      if (error) throw error;
+    } catch (error) {
+      setMessage(`❌ ${error.message}`);
+      setLoading(false);
+    }
+  };
+
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -19,12 +38,12 @@ export default function Login() {
     try {
       let error;
       if (isSignUp) {
-        // Criar Conta
+        // Criar Conta com E-mail
         const { error: signUpError } = await supabase.auth.signUp({ email, password });
         error = signUpError;
         if (!error) setMessage('✅ Verifique seu e-mail para confirmar o cadastro!');
       } else {
-        // Fazer Login
+        // Fazer Login com E-mail
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         error = signInError;
         if (!error) navigate('/'); 
@@ -94,6 +113,41 @@ export default function Login() {
           </p>
         </div>
         
+        {/* --- BOTÃO DO GOOGLE (NOVO) --- */}
+        <button
+          onClick={handleGoogleLogin}
+          type="button"
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: 'white',
+            color: '#1f2937',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            marginBottom: '20px',
+            transition: 'transform 0.1s'
+          }}
+          onMouseDown={(e) => e.target.style.transform = 'scale(0.98)'}
+          onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
+        >
+          <FcGoogle size={24} />
+          Entrar com Google
+        </button>
+
+        {/* --- SEPARADOR --- */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '25px', color: '#6b7280' }}>
+           <div style={{ flex: 1, height: '1px', backgroundColor: '#374151' }}></div>
+           <span style={{ padding: '0 10px', fontSize: '0.85rem' }}>OU</span>
+           <div style={{ flex: 1, height: '1px', backgroundColor: '#374151' }}></div>
+        </div>
+
         <form onSubmit={handleAuth}>
           
           {/* INPUT EMAIL */}
@@ -119,7 +173,7 @@ export default function Login() {
                   fontSize: '1rem',
                   outline: 'none',
                   transition: 'border-color 0.2s',
-                  boxSizing: 'border-box' // <--- A CORREÇÃO MÁGICA AQUI
+                  boxSizing: 'border-box'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#a855f7'}
                 onBlur={(e) => e.target.style.borderColor = '#4b5563'}
@@ -150,7 +204,7 @@ export default function Login() {
                   fontSize: '1rem',
                   outline: 'none',
                   transition: 'border-color 0.2s',
-                  boxSizing: 'border-box' // <--- A CORREÇÃO MÁGICA AQUI TAMBÉM
+                  boxSizing: 'border-box'
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#a855f7'}
                 onBlur={(e) => e.target.style.borderColor = '#4b5563'}
@@ -188,7 +242,7 @@ export default function Login() {
             onMouseDown={(e) => e.target.style.transform = 'scale(0.98)'}
             onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
           >
-            {loading ? 'Carregando...' : (isSignUp ? 'Criar Conta Grátis' : 'Entrar na Plataforma')}
+            {loading ? 'Carregando...' : (isSignUp ? 'Criar Conta' : 'Entrar com E-mail')}
           </button>
 
         </form>
