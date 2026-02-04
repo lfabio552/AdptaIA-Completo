@@ -115,26 +115,66 @@ export default function ImageGenerator() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA: Gradiente Dourado (Gold/Amber)
+      background: 'radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO PARA ALINHAMENTO */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 40px;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 1024px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: 1fr;
+          }
+        }
+
+        .tool-card {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+      `}</style>
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
         <div style={{ textAlign: 'center', marginBottom: '50px' }}>
           <div style={{ 
              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-             background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', 
+             background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', // Gradiente Dourado
              width: '60px', height: '60px', borderRadius: '15px', marginBottom: '20px',
-             boxShadow: '0 10px 30px -10px rgba(59, 130, 246, 0.5)'
+             boxShadow: '0 10px 30px -10px rgba(245, 158, 11, 0.5)'
           }}>
             <PhotoIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: '800', 
+            marginBottom: '10px',
+            // Texto Dourado
+            background: 'linear-gradient(to right, #ffffff, #fbbf24, #f59e0b)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Gerador de Imagens (Stable Diffusion)
           </h1>
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
             Transforme suas ideias em arte digital de alta resolução em segundos.
           </p>
-          <div style={{ marginTop: '15px', fontSize: '0.9rem', color: '#fbbf24', fontWeight: 'bold' }}>
+          <div style={{ marginTop: '15px', fontSize: '0.9rem', color: '#fbbf24', fontWeight: 'bold', border: '1px solid #fbbf24', display: 'inline-block', padding: '5px 15px', borderRadius: '20px' }}>
             ⚠️ Custa 2 créditos por geração
           </div>
         </div>
@@ -168,23 +208,18 @@ export default function ImageGenerator() {
         )}
 
         {/* GRID PRINCIPAL */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', // Responsivo
-          gap: '40px',
-          alignItems: 'start'
-        }}>
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: CONTROLES */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
-            <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: '25px' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
+              <div style={{ marginBottom: '25px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
                   Descreva sua Imagem:
                 </label>
@@ -195,7 +230,8 @@ export default function ImageGenerator() {
                   required
                   style={{
                     width: '100%',
-                    height: '140px',
+                    flexGrow: 1, // Preenche espaço vertical
+                    minHeight: '200px',
                     padding: '15px',
                     borderRadius: '12px',
                     backgroundColor: '#111827',
@@ -204,7 +240,7 @@ export default function ImageGenerator() {
                     fontSize: '1rem',
                     lineHeight: '1.5',
                     resize: 'none',
-                    boxSizing: 'border-box' // Importante para não estourar
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -222,7 +258,7 @@ export default function ImageGenerator() {
                       borderRadius: '12px',
                       backgroundColor: '#111827',
                       color: 'white',
-                      border: '1px solid #8b5cf6', 
+                      border: '1px solid #f59e0b', // Borda Dourada
                       fontSize: '1rem',
                       cursor: 'pointer',
                       boxSizing: 'border-box'
@@ -241,16 +277,17 @@ export default function ImageGenerator() {
                 type="submit"
                 disabled={isLoading}
                 style={{
+                  marginTop: 'auto',
                   width: '100%',
                   padding: '16px',
-                  background: 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)',
+                  background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)', // Botão Dourado
                   color: 'white',
                   border: 'none',
                   borderRadius: '12px',
                   fontWeight: 'bold',
                   cursor: isLoading ? 'wait' : 'pointer',
                   fontSize: '1.1rem',
-                  boxShadow: '0 10px 20px -5px rgba(59, 130, 246, 0.4)',
+                  boxShadow: '0 10px 20px -5px rgba(245, 158, 11, 0.4)',
                   transition: 'transform 0.1s'
                 }}
               >
@@ -266,14 +303,14 @@ export default function ImageGenerator() {
           </div>
 
           {/* LADO DIREITO: RESULTADO VISUAL */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '20px', 
             borderRadius: '20px', 
-            border: '1px solid #8b5cf6',
+            border: '1px solid #f59e0b', // Borda Dourada
             display: 'flex',
             flexDirection: 'column',
-            minHeight: '500px', // Altura mínima para ficar bonito
+            minHeight: '500px', 
             justifyContent: 'center',
             alignItems: 'center'
           }}>
@@ -309,9 +346,7 @@ export default function ImageGenerator() {
                 </>
             ) : (
                 <div style={{ textAlign: 'center', color: '#6b7280' }}>
-                    <div style={{ 
-                        fontSize: '60px', marginBottom: '20px', opacity: 0.3
-                    }}>🖼️</div>
+                    <div style={{ fontSize: '60px', marginBottom: '20px', opacity: 0.3 }}>🖼️</div>
                     <p style={{ fontSize: '1.1rem' }}>Sua arte aparecerá aqui.</p>
                     <p style={{ fontSize: '0.9rem' }}>Preencha o prompt e clique em gerar.</p>
                 </div>

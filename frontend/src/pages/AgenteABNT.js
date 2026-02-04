@@ -8,7 +8,7 @@ import {
   AcademicCapIcon, 
   ArrowDownTrayIcon, 
   ClipboardIcon, 
-  SparklesIcon,
+  SparklesIcon, 
   DocumentTextIcon 
 } from '@heroicons/react/24/solid';
 
@@ -135,7 +135,39 @@ export default function AgenteABNT() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA: Gradiente Azul Acadêmico no fundo
+      background: 'radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 40px;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 1024px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: 1fr; /* Garante altura igual */
+          }
+        }
+
+        /* Card base para garantir altura */
+        .tool-card {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+      `}</style>
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
@@ -148,7 +180,16 @@ export default function AgenteABNT() {
           }}>
             <AcademicCapIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: '800', 
+            marginBottom: '10px',
+            // MUDANÇA: Gradiente no texto
+            background: 'linear-gradient(to right, #ffffff, #60a5fa, #2563eb)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Formatador ABNT Inteligente
           </h1>
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -184,23 +225,18 @@ export default function AgenteABNT() {
           </div>
         )}
 
-        {/* GRID PRINCIPAL (Input Esquerda / Output Direita) */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
-          gap: '40px',
-          alignItems: 'start'
-        }}>
+        {/* GRID PRINCIPAL */}
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: INPUT */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '25px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
               <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
                 📝 Texto Original (Bagunçado):
               </label>
@@ -211,7 +247,8 @@ export default function AgenteABNT() {
                 required
                 style={{
                   width: '100%',
-                  height: '400px', // Altura boa para texto longo
+                  flexGrow: 1, // Preenche espaço vertical
+                  minHeight: '300px', // Altura mínima
                   padding: '15px',
                   borderRadius: '12px',
                   backgroundColor: '#111827',
@@ -225,7 +262,7 @@ export default function AgenteABNT() {
                 }}
               />
               
-              <div style={{ marginTop: '20px' }}>
+              <div style={{ marginTop: 'auto', paddingTop: '20px' }}> {/* Empurra para baixo */}
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -260,14 +297,14 @@ export default function AgenteABNT() {
           </div>
 
           {/* LADO DIREITO: PREVIEW E DOWNLOAD */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '25px', 
             borderRadius: '20px', 
             border: formattedText ? '1px solid #10b981' : '1px solid #374151', // Borda verde se tiver sucesso
             display: 'flex',
             flexDirection: 'column',
-            minHeight: '560px' // Alinha a altura com o lado esquerdo
+            minHeight: '560px' // Altura mínima garantida
           }}>
             <h3 style={{ color: formattedText ? '#6ee7b7' : '#9ca3af', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <DocumentTextIcon style={{ width: '24px' }} /> 
@@ -275,7 +312,7 @@ export default function AgenteABNT() {
             </h3>
             
             <div style={{ 
-              flexGrow: 1,
+              flexGrow: 1, 
               backgroundColor: '#ffffff', // Fundo branco para simular papel
               color: '#000000', // Texto preto
               padding: '30px', // Margens de papel

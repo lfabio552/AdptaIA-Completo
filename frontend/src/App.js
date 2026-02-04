@@ -15,6 +15,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import UpdatePassword from './pages/UpdatePassword';
 import TermsAndPrivacy from './pages/TermsAndPrivacy'; // <--- IMPORT NOVO
 import PricingPage from './pages/PricingPage';
+import UserProfile from './pages/UserProfile';
 
 // Ferramentas
 import ImagePromptGenerator from './pages/ImagePromptGenerator';
@@ -46,7 +47,8 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />
 	    <Route path="/precos" element={<PricingPage />} />
-            
+            <Route path="/meu-perfil" element={<UserProfile />} />
+
             {/* NOVA ROTA DE TERMOS */}
             <Route path="/termos" element={<TermsAndPrivacy />} />
 
@@ -73,9 +75,6 @@ function App() {
           </Routes>
         </main>
 
-        <footer className="bg-gray-800 p-4 text-center text-gray-400 mt-8">
-          <p>&copy; {new Date().getFullYear()} Meu App de IA. Todos os direitos reservados.</p>
-        </footer>
       </div>
     </Router>
   );

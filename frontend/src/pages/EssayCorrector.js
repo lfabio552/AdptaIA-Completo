@@ -100,7 +100,39 @@ export default function EssayCorrector() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA: Gradiente Laranja no fundo
+      background: 'radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 40px;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 1024px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: 1fr; /* Garante altura igual */
+          }
+        }
+
+        /* Card base para garantir altura */
+        .tool-card {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+      `}</style>
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
@@ -113,7 +145,16 @@ export default function EssayCorrector() {
           }}>
             <AcademicCapIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: '800', 
+            marginBottom: '10px',
+            // MUDANÇA: Gradiente no texto
+            background: 'linear-gradient(to right, #ffffff, #fbbf24, #f59e0b)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Corretor de Redação IA
           </h1>
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -150,24 +191,17 @@ export default function EssayCorrector() {
         )}
 
         {/* GRID PRINCIPAL */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
-          gap: '40px',
-          alignItems: 'stretch'
-        }}>
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: INPUTS */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            display: 'flex',
-            flexDirection: 'column'
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
-            <form onSubmit={handleCorrect} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+            <form onSubmit={handleCorrect} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
               
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#e5e7eb' }}>
@@ -202,7 +236,7 @@ export default function EssayCorrector() {
                   required
                   style={{
                     width: '100%',
-                    flexGrow: 1,
+                    flexGrow: 1, // Ocupa espaço vertical
                     minHeight: '300px',
                     padding: '15px',
                     borderRadius: '10px',
@@ -224,6 +258,7 @@ export default function EssayCorrector() {
                 type="submit"
                 disabled={isLoading || essayText.length < 50}
                 style={{
+                  marginTop: 'auto',
                   width: '100%',
                   padding: '16px',
                   background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)',
@@ -250,7 +285,7 @@ export default function EssayCorrector() {
           </div>
 
           {/* LADO DIREITO: BOLETIM (RESULTADO) */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
@@ -277,7 +312,7 @@ export default function EssayCorrector() {
                     marginBottom: '30px', 
                     padding: '25px', 
                     backgroundColor: '#111827', 
-                    borderRadius: '16px',
+                    borderRadius: '16px', 
                     border: '1px solid #374151',
                     position: 'relative',
                     overflow: 'hidden'

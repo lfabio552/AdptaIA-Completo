@@ -83,12 +83,6 @@ export default function ChatPDF() {
         setStatus('✅ PDF processado! Analisando sua pergunta...');
       }
 
-      // 2. PERGUNTA (RAG)
-      if (!file && !status.includes('PDF processado')) {
-          // Se não tem arquivo novo e não tem "contexto" anterior (status), avisa
-          // (Na prática, você pode querer manter o contexto no backend, mas aqui vamos simplificar)
-      }
-
       setStatus('🤔 A IA está lendo o documento...');
       
       const askUrl = config.ENDPOINTS.ASK_DOCUMENT || `${config.API_BASE_URL}/ask-document`;
@@ -134,7 +128,43 @@ export default function ChatPDF() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA: Gradiente Vermelho no fundo
+      background: 'radial-gradient(circle at 50% 0%, rgba(239, 68, 68, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 40px;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 1024px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+            align-items: stretch; /* Garante altura igual */
+          }
+        }
+
+        /* Card base para garantir altura */
+        .tool-card {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+        
+        /* Animação do Loader */
+        .loader { width: 16px; height: 16px; border: 2px solid #fbbf24; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      `}</style>
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
@@ -147,7 +177,16 @@ export default function ChatPDF() {
           }}>
             <DocumentTextIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: '800', 
+            marginBottom: '10px',
+            // MUDANÇA: Gradiente no texto do título
+            background: 'linear-gradient(to right, #ffffff, #fca5a5, #ef4444)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Chat com PDF (RAG)
           </h1>
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -184,22 +223,17 @@ export default function ChatPDF() {
         )}
 
         {/* GRID PRINCIPAL */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
-          gap: '40px',
-          alignItems: 'start'
-        }}>
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: UPLOAD E PERGUNTA */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
               
               {/* UPLOAD AREA */}
               <div style={{ marginBottom: '30px' }}>
@@ -253,7 +287,7 @@ export default function ChatPDF() {
               </div>
 
               {/* PERGUNTA */}
-              <div style={{ marginBottom: '25px' }}>
+              <div style={{ marginBottom: '25px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
                   2. O que você quer saber?
                 </label>
@@ -264,7 +298,8 @@ export default function ChatPDF() {
                   required
                   style={{
                     width: '100%',
-                    height: '120px',
+                    flexGrow: 1, // Faz crescer para preencher espaço
+                    minHeight: '150px',
                     padding: '15px',
                     borderRadius: '12px',
                     backgroundColor: '#111827',
@@ -297,6 +332,7 @@ export default function ChatPDF() {
                 type="submit"
                 disabled={isLoading}
                 style={{
+                  marginTop: 'auto', // Empurra para o fundo
                   width: '100%',
                   padding: '16px',
                   background: 'linear-gradient(90deg, #ef4444 0%, #b91c1c 100%)',
@@ -323,21 +359,21 @@ export default function ChatPDF() {
           </div>
 
           {/* LADO DIREITO: RESPOSTA */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
-            border: '1px solid #ef4444', // Borda vermelha para combinar
+            border: '1px solid #ef4444', 
             display: 'flex',
             flexDirection: 'column',
-            minHeight: '400px'
+            minHeight: '400px' // Altura mínima de segurança
           }}>
             <h3 style={{ color: '#fca5a5', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <ChatBubbleLeftRightIcon style={{ width: '24px' }} /> Resposta da IA:
             </h3>
             
             <div style={{ 
-              flexGrow: 1,
+              flexGrow: 1, // Preenche todo o espaço vertical disponível
               backgroundColor: '#111827', 
               padding: '20px', 
               borderRadius: '12px',
@@ -346,10 +382,14 @@ export default function ChatPDF() {
               color: '#d1d5db',
               lineHeight: '1.7',
               whiteSpace: 'pre-wrap',
-              border: '1px solid #374151'
+              border: '1px solid #374151',
+              display: 'flex',
+              flexDirection: 'column'
             }}>
-              {answer || (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6b7280' }}>
+              {answer ? (
+                <span>{answer}</span>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexGrow: 1, color: '#6b7280' }}>
                    <DocumentTextIcon style={{ width: '48px', opacity: 0.2, marginBottom: '10px' }} />
                    <p>A resposta aparecerá aqui.</p>
                 </div>

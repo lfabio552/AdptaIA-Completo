@@ -7,8 +7,8 @@ import ExemplosSection from '../components/ExemplosSection';
 import { 
   BookOpenIcon, 
   AcademicCapIcon, 
-  ClipboardDocumentCheckIcon,
-  LightBulbIcon,
+  ClipboardDocumentCheckIcon, 
+  LightBulbIcon, 
   ListBulletIcon
 } from '@heroicons/react/24/solid';
 
@@ -66,22 +66,13 @@ export default function StudyMaterialGenerator() {
 
       setMaterial(data.material);
 
-      try {
-        await fetch(`${config.API_BASE_URL}/save-history`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: user.id,
-            tool_type: 'study',
-            input_data: topic,
-            title: topic,
-            output_data: data.material,
-            metadata: { level: level }
-          })
-        });
-      } catch (histError) {
-        console.error("Erro ao salvar histórico:", histError);
-      }
+      await saveToHistory(
+        user,
+        TOOL_CONFIGS.STUDY_MATERIAL,
+        topic,
+        data.material,
+        { level }
+      );
 
     } catch (err) {
       setError(err.message);
@@ -91,7 +82,39 @@ export default function StudyMaterialGenerator() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA: Gradiente Teal no fundo
+      background: 'radial-gradient(circle at 50% 0%, rgba(20, 184, 166, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 40px;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 1024px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: 1fr; /* Garante altura igual */
+          }
+        }
+
+        /* Card base para garantir altura */
+        .tool-card {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+      `}</style>
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
@@ -104,7 +127,16 @@ export default function StudyMaterialGenerator() {
           }}>
             <BookOpenIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: '800', 
+            marginBottom: '10px',
+            // MUDANÇA: Gradiente no texto
+            background: 'linear-gradient(to right, #ffffff, #5eead4, #14b8a6)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Gerador de Material de Estudo
           </h1>
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -141,26 +173,19 @@ export default function StudyMaterialGenerator() {
         )}
 
         {/* GRID PRINCIPAL */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
-          gap: '40px',
-          alignItems: 'stretch'
-        }}>
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: CONFIGURAÇÃO */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            display: 'flex',
-            flexDirection: 'column'
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
-            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
               
-              <div style={{ marginBottom: '25px' }}>
+              <div style={{ marginBottom: '25px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
                   <LightBulbIcon style={{width: '20px', color: '#2dd4bf'}}/> Tópico de Estudo:
                 </label>
@@ -183,7 +208,7 @@ export default function StudyMaterialGenerator() {
                 />
               </div>
 
-              <div style={{ marginBottom: '30px', flexGrow: 1 }}>
+              <div style={{ marginBottom: '30px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
                   <AcademicCapIcon style={{width: '20px', color: '#2dd4bf'}}/> Nível de Ensino:
                 </label>
@@ -197,7 +222,7 @@ export default function StudyMaterialGenerator() {
                     borderRadius: '10px', 
                     backgroundColor: '#111827', 
                     color: 'white', 
-                    border: '1px solid #4b5563',
+                    border: '1px solid #4b5563', 
                     boxSizing: 'border-box',
                     cursor: 'pointer'
                   }}
@@ -240,7 +265,7 @@ export default function StudyMaterialGenerator() {
           </div>
 
           {/* LADO DIREITO: RESULTADO */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
@@ -274,8 +299,8 @@ export default function StudyMaterialGenerator() {
             </div>
             
             <div style={{ 
-              flexGrow: 1,
-              backgroundColor: '#111827', // Fundo escuro para leitura confortável em tela
+              flexGrow: 1, 
+              backgroundColor: '#111827', // Fundo escuro
               color: '#e2e8f0', 
               padding: '25px', 
               borderRadius: '12px',

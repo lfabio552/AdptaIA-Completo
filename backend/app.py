@@ -857,6 +857,35 @@ def get_history():
         print(f"❌ Erro ao buscar histórico: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ROTA PARA O PORTAL DO CLIENTE STRIPE (GERENCIAR ASSINATURA)
+@app.route('/create-portal-session', methods=['POST'])
+def customer_portal():
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        
+        # 1. Buscar o stripe_customer_id no Supabase
+        # (Se você ainda não salva isso, use um email fixo ou busque na tabela profiles)
+        user_response = supabase.table('profiles').select('stripe_customer_id').eq('id', user_id).execute()
+        
+        if not user_response.data or not user_response.data[0].get('stripe_customer_id'):
+             # Se o usuário não tem ID do Stripe, ele provavelmente nunca assinou (é Free)
+             return jsonify({'error': 'Você não possui uma assinatura ativa para gerenciar.'}), 400
+
+        stripe_customer_id = user_response.data[0]['stripe_customer_id']
+
+        # 2. Criar sessão no Stripe
+        session = stripe.billing_portal.Session.create(
+            customer=stripe_customer_id,
+            return_url='https://SEU-SITE-VERCEL.app/meu-perfil' # Para onde ele volta ao sair
+        )
+
+        return jsonify({'url': session.url})
+
+    except Exception as e:
+        print(str(e))
+        return jsonify({'error': str(e)}), 500
+
 # 21. DELETAR ITEM DO HISTÓRICO
 @app.route('/delete-history-item', methods=['POST'])
 def delete_history_item():
@@ -914,7 +943,7 @@ def create_portal_session():
         
         session = stripe.billing_portal.Session.create(
             customer=resp.data[0]['stripe_customer_id'],
-            return_url=f'{frontend_url}/',
+            return_url=f'{frontend_url}/meu-perfil',
         )
         return jsonify({'url': session.url})
     except Exception as e: return jsonify({'error': str(e)}), 500

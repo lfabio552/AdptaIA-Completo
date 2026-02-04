@@ -7,8 +7,8 @@ import ExemplosSection from '../components/ExemplosSection';
 import { 
   PencilSquareIcon, 
   DocumentTextIcon, 
-  ClipboardDocumentCheckIcon,
-  BriefcaseIcon,
+  ClipboardDocumentCheckIcon, 
+  BriefcaseIcon, 
   UserCircleIcon
 } from '@heroicons/react/24/solid';
 
@@ -82,7 +82,39 @@ export default function CoverLetterGenerator() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA: Gradiente Teal no fundo
+      background: 'radial-gradient(circle at 50% 0%, rgba(13, 148, 136, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 40px;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 1024px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: 1fr; /* Garante altura igual */
+          }
+        }
+
+        /* Card base para garantir altura */
+        .tool-card {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+      `}</style>
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
@@ -95,7 +127,16 @@ export default function CoverLetterGenerator() {
           }}>
             <PencilSquareIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: '800', 
+            marginBottom: '10px',
+            // MUDANÇA: Gradiente no texto
+            background: 'linear-gradient(to right, #ffffff, #5eead4, #0d9488)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Gerador de Carta de Apresentação
           </h1>
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -132,27 +173,19 @@ export default function CoverLetterGenerator() {
         )}
 
         {/* GRID PRINCIPAL */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
-          gap: '40px',
-          alignItems: 'stretch' // <--- AQUI ESTÁ A CORREÇÃO: Força altura igual nos dois lados
-        }}>
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: INPUTS */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            display: 'flex',        // Flex para controlar o layout interno
-            flexDirection: 'column' // Organiza em coluna
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
-            {/* O formulário cresce (flexGrow) para ocupar todo o espaço do cartão */}
-            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
               
-              <div style={{ marginBottom: '25px' }}>
+              <div style={{ marginBottom: '25px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
                   <BriefcaseIcon style={{width: '20px', color: '#2dd4bf'}}/> 1. Descrição da Vaga:
                 </label>
@@ -163,7 +196,8 @@ export default function CoverLetterGenerator() {
                   required
                   style={{
                     width: '100%',
-                    height: '180px', // Aumentei um pouco para ficar mais proporcional
+                    flexGrow: 1,
+                    minHeight: '180px',
                     padding: '15px',
                     borderRadius: '12px',
                     backgroundColor: '#111827',
@@ -177,7 +211,7 @@ export default function CoverLetterGenerator() {
                 />
               </div>
 
-              <div style={{ marginBottom: '30px', flexGrow: 1 }}> {/* flexGrow aqui ajuda a empurrar se sobrar espaço */}
+              <div style={{ marginBottom: '30px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
                   <UserCircleIcon style={{width: '20px', color: '#2dd4bf'}}/> 2. Seu Resumo Profissional:
                 </label>
@@ -188,7 +222,8 @@ export default function CoverLetterGenerator() {
                   required
                   style={{
                     width: '100%',
-                    height: '180px',
+                    flexGrow: 1,
+                    minHeight: '180px',
                     padding: '15px',
                     borderRadius: '12px',
                     backgroundColor: '#111827',
@@ -202,12 +237,11 @@ export default function CoverLetterGenerator() {
                 />
               </div>
 
-              {/* Botão com marginTop: auto para ir para o rodapé do cartão */}
               <button
                 type="submit"
                 disabled={isLoading}
                 style={{
-                  marginTop: 'auto', // <--- Isso empurra o botão para baixo
+                  marginTop: 'auto',
                   width: '100%',
                   padding: '16px',
                   background: 'linear-gradient(90deg, #0d9488 0%, #0f766e 100%)',
@@ -234,14 +268,14 @@ export default function CoverLetterGenerator() {
           </div>
 
           {/* LADO DIREITO: RESULTADO */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #0d9488', 
             display: 'flex',
             flexDirection: 'column',
-            minHeight: '650px' // Altura mínima garantida para o papel ficar bonito
+            minHeight: '650px' // Altura mínima para parecer uma folha
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ color: '#5eead4', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.2rem' }}>
@@ -268,10 +302,10 @@ export default function CoverLetterGenerator() {
             </div>
             
             <div style={{ 
-              flexGrow: 1,
+              flexGrow: 1, 
               backgroundColor: '#ffffff', 
               color: '#1f2937', 
-              padding: '40px', // Mais padding para parecer papel A4
+              padding: '40px', // Estilo Papel A4
               borderRadius: '12px',
               fontFamily: "'Times New Roman', serif", 
               fontSize: '1.05rem',
@@ -279,7 +313,7 @@ export default function CoverLetterGenerator() {
               whiteSpace: 'pre-wrap',
               border: '1px solid #d1d5db',
               overflowY: 'auto',
-              maxHeight: '600px', // Altura máxima interna com scroll
+              maxHeight: '650px',
               boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05)'
             }}>
               {generatedLetter || (

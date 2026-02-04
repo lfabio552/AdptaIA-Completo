@@ -7,7 +7,7 @@ import {
   BriefcaseIcon, 
   LanguageIcon, 
   ClipboardDocumentCheckIcon, 
-  SparklesIcon,
+  SparklesIcon, 
   ArrowPathIcon
 } from '@heroicons/react/24/solid';
 
@@ -97,7 +97,41 @@ export default function CorporateTranslator() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA: Gradiente Azul Executivo no fundo
+      background: 'radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 40px;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 1024px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: 1fr; /* Garante altura igual */
+          }
+        }
+
+        /* Card base para garantir altura */
+        .tool-card {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      `}</style>
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
@@ -110,7 +144,16 @@ export default function CorporateTranslator() {
           }}>
             <BriefcaseIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: '800', 
+            marginBottom: '10px',
+            // MUDANÇA: Gradiente no texto
+            background: 'linear-gradient(to right, #ffffff, #7dd3fc, #0ea5e9)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Tradutor & Refinador Corporativo
           </h1>
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -147,23 +190,19 @@ export default function CorporateTranslator() {
         )}
 
         {/* GRID PRINCIPAL */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
-          gap: '40px',
-          alignItems: 'start'
-        }}>
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: INPUT */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
-            <form onSubmit={handleTranslate}>
-              <div style={{ marginBottom: '25px' }}>
+            <form onSubmit={handleTranslate} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
+              
+              <div style={{ marginBottom: '25px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
                   📝 Seu Rascunho (Informal):
                 </label>
@@ -174,7 +213,8 @@ export default function CorporateTranslator() {
                   required
                   style={{
                     width: '100%',
-                    height: '200px',
+                    flexGrow: 1, // Preenche espaço vertical
+                    minHeight: '200px',
                     padding: '15px',
                     borderRadius: '12px',
                     backgroundColor: '#111827',
@@ -194,7 +234,10 @@ export default function CorporateTranslator() {
                   <select
                     value={tone}
                     onChange={(e) => setTone(e.target.value)}
-                    style={{ width: '100%', padding: '12px', borderRadius: '10px', backgroundColor: '#111827', color: 'white', border: '1px solid #0ea5e9' }}
+                    style={{ 
+                        width: '100%', padding: '12px', borderRadius: '10px', 
+                        backgroundColor: '#111827', color: 'white', border: '1px solid #0ea5e9' 
+                    }}
                   >
                     <option>Profissional / Formal</option>
                     <option>Liderança / Executivo</option>
@@ -209,7 +252,10 @@ export default function CorporateTranslator() {
                   <select
                     value={targetLang}
                     onChange={(e) => setTargetLang(e.target.value)}
-                    style={{ width: '100%', padding: '12px', borderRadius: '10px', backgroundColor: '#111827', color: 'white', border: '1px solid #3b82f6' }}
+                    style={{ 
+                        width: '100%', padding: '12px', borderRadius: '10px', 
+                        backgroundColor: '#111827', color: 'white', border: '1px solid #3b82f6' 
+                    }}
                   >
                     <option>Português (Melhorar)</option>
                     <option>Inglês (Business)</option>
@@ -225,6 +271,7 @@ export default function CorporateTranslator() {
                 type="submit"
                 disabled={isLoading}
                 style={{
+                  marginTop: 'auto',
                   width: '100%',
                   padding: '16px',
                   background: 'linear-gradient(90deg, #0ea5e9 0%, #2563eb 100%)',
@@ -245,23 +292,15 @@ export default function CorporateTranslator() {
                     </span>
                 ) : '✨ Transformar Texto'}
               </button>
-              
-              <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-
-              {error && (
-                <div style={{ marginTop: '20px', color: '#fca5a5', padding: '12px', backgroundColor: '#450a0a', borderRadius: '10px', fontSize: '0.9rem' }}>
-                  ⚠️ {error}
-                </div>
-              )}
             </form>
           </div>
 
           {/* LADO DIREITO: OUTPUT */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
-            border: '1px solid #0ea5e9', // Borda Azul
+            border: '1px solid #0ea5e9', 
             display: 'flex',
             flexDirection: 'column',
             minHeight: '450px'
@@ -291,18 +330,18 @@ export default function CorporateTranslator() {
             </div>
             
             <div style={{ 
-              flexGrow: 1,
+              flexGrow: 1, 
               backgroundColor: '#ffffff', // Fundo branco estilo documento
               padding: '25px', 
               borderRadius: '12px',
               fontFamily: "'Georgia', serif", // Fonte de documento
               fontSize: '1.05rem',
-              color: '#1f2937', // Texto escuro para contraste
+              color: '#1f2937', // Texto escuro
               lineHeight: '1.6',
               whiteSpace: 'pre-wrap',
               border: '1px solid #d1d5db',
               overflowY: 'auto',
-              maxHeight: '400px'
+              maxHeight: '450px'
             }}>
               {translatedText || <span style={{color: '#9ca3af', fontFamily: 'sans-serif'}}>O texto refinado aparecerá aqui...</span>}
             </div>

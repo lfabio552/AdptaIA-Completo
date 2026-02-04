@@ -109,7 +109,39 @@ export default function SocialMediaGenerator() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA: Gradiente Roxo no fundo (Spotlight)
+      background: 'radial-gradient(circle at 50% 0%, rgba(217, 70, 239, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 40px;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 1024px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: 1fr; /* Garante altura igual */
+          }
+        }
+
+        /* Card base para garantir altura */
+        .tool-card {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+      `}</style>
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
@@ -122,7 +154,16 @@ export default function SocialMediaGenerator() {
           }}>
             <DevicePhoneMobileIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: '800', 
+            marginBottom: '10px',
+            // MUDANÇA: Gradiente no texto do título
+            background: 'linear-gradient(to right, #ffffff, #e879f9, #d946ef)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Social Media Kit
           </h1>
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -159,24 +200,17 @@ export default function SocialMediaGenerator() {
         )}
 
         {/* GRID PRINCIPAL */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
-          gap: '40px',
-          alignItems: 'stretch' 
-        }}>
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: CONFIGURAÇÃO */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            display: 'flex',
-            flexDirection: 'column'
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
-            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
               
               <div style={{ marginBottom: '25px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
@@ -190,7 +224,7 @@ export default function SocialMediaGenerator() {
                   style={{
                     width: '100%',
                     flexGrow: 1,
-                    minHeight: '150px',
+                    minHeight: '200px', // Altura mínima um pouco maior
                     padding: '15px',
                     borderRadius: '12px',
                     backgroundColor: '#111827',
@@ -274,21 +308,21 @@ export default function SocialMediaGenerator() {
           </div>
 
           {/* LADO DIREITO: PREVIEW (SIMULAÇÃO DE CELULAR) */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #d946ef', 
             display: 'flex',
             flexDirection: 'column',
-            minHeight: '500px'
+            minHeight: '500px' // Mantém o mínimo para não quebrar o layout
           }}>
             <h3 style={{ color: '#e879f9', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <PaperAirplaneIcon style={{ width: '24px' }} /> Preview:
             </h3>
             
             <div style={{ 
-                flexGrow: 1,
+                flexGrow: 1, 
                 backgroundColor: '#000', 
                 borderRadius: '16px',
                 border: '1px solid #374151',
@@ -316,7 +350,7 @@ export default function SocialMediaGenerator() {
                     lineHeight: '1.6', 
                     whiteSpace: 'pre-wrap',
                     overflowY: 'auto',
-                    maxHeight: '350px'
+                    maxHeight: '400px'
                 }}>
                     {generatedContent || <span style={{color: '#6b7280', fontStyle: 'italic'}}>O conteúdo do seu post aparecerá aqui...</span>}
                 </div>

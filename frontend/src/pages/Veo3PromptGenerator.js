@@ -121,7 +121,39 @@ export default function Veo3PromptGenerator() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA: Gradiente Índigo no fundo
+      background: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 40px;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 1024px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: 1fr; /* Garante altura igual */
+          }
+        }
+
+        /* Card base para garantir altura */
+        .tool-card {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+      `}</style>
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
@@ -134,7 +166,16 @@ export default function Veo3PromptGenerator() {
           }}>
             <VideoCameraIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: '800', 
+            marginBottom: '10px',
+            // MUDANÇA: Gradiente no texto
+            background: 'linear-gradient(to right, #ffffff, #a5b4fc, #6366f1)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Gerador de Prompt para Vídeo
           </h1>
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -171,24 +212,17 @@ export default function Veo3PromptGenerator() {
         )}
 
         {/* GRID PRINCIPAL */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
-          gap: '40px',
-          alignItems: 'stretch'
-        }}>
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: CONFIGURAÇÃO */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            display: 'flex',
-            flexDirection: 'column'
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
-            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
               
               <div style={{ marginBottom: '25px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
@@ -251,6 +285,7 @@ export default function Veo3PromptGenerator() {
                 type="submit"
                 disabled={isLoading}
                 style={{
+                  marginTop: 'auto',
                   width: '100%',
                   padding: '16px',
                   background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
@@ -262,8 +297,7 @@ export default function Veo3PromptGenerator() {
                   fontSize: '1.1rem',
                   opacity: isLoading ? 0.7 : 1,
                   boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)',
-                  transition: 'transform 0.1s',
-                  marginTop: 'auto'
+                  transition: 'transform 0.1s'
                 }}
               >
                 {isLoading ? '🎥 Renderizando Prompt...' : '🎬 Gerar Prompt VEO'}
@@ -278,7 +312,7 @@ export default function Veo3PromptGenerator() {
           </div>
 
           {/* LADO DIREITO: RESULTADO */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
@@ -312,8 +346,8 @@ export default function Veo3PromptGenerator() {
             </div>
             
             <div style={{ 
-              flexGrow: 1,
-              backgroundColor: '#000000', // Fundo preto estilo terminal/console
+              flexGrow: 1, 
+              backgroundColor: '#000000', // Fundo preto estilo terminal
               color: '#e5e7eb', 
               padding: '25px', 
               borderRadius: '12px',

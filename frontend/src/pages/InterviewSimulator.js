@@ -7,7 +7,7 @@ import {
   UserIcon, 
   BriefcaseIcon, 
   ChatBubbleLeftRightIcon, 
-  LightBulbIcon,
+  LightBulbIcon, 
   SparklesIcon
 } from '@heroicons/react/24/solid';
 
@@ -98,10 +98,10 @@ export default function InterviewSimulator() {
     }
   };
 
-  // Estilo compartilhado para garantir que Input e Select sejam idênticos
+  // Estilo compartilhado para inputs
   const inputStyle = {
     width: '100%', 
-    height: '50px', // Altura fixa e idêntica
+    height: '50px', 
     padding: '0 15px', 
     borderRadius: '10px', 
     backgroundColor: '#111827', 
@@ -110,7 +110,7 @@ export default function InterviewSimulator() {
     boxSizing: 'border-box',
     fontSize: '1rem',
     outline: 'none',
-    margin: 0 // Remove margens padrão
+    margin: 0
   };
 
   const labelStyle = {
@@ -118,12 +118,47 @@ export default function InterviewSimulator() {
     marginBottom: '8px', 
     fontSize: '0.9rem', 
     color: '#9ca3af', 
-    lineHeight: '1.5', // Altura de linha fixa para alinhar os textos
+    lineHeight: '1.5',
     fontWeight: '600'
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA: Gradiente Verde no fundo
+      background: 'radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 30px;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 1024px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: 1fr; /* Altura igual */
+          }
+        }
+
+        .tool-card {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .loader { border: 3px solid #374151; border-top: 3px solid #10b981; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      `}</style>
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
@@ -136,7 +171,16 @@ export default function InterviewSimulator() {
           }}>
             <ChatBubbleLeftRightIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: '800', 
+            marginBottom: '10px',
+            // MUDANÇA: Gradiente no texto
+            background: 'linear-gradient(to right, #ffffff, #6ee7b7, #10b981)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Simulador de Entrevista
           </h1>
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -173,25 +217,17 @@ export default function InterviewSimulator() {
         )}
 
         {/* GRID PRINCIPAL */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
-          gap: '30px',
-          alignItems: 'stretch' 
-        }}>
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: CONFIGURAÇÃO */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '600px' 
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
-            <form onSubmit={handleStartSimulation} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+            <form onSubmit={handleStartSimulation} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
               
               {/* LINHA 1: CARGO */}
               <div style={{ marginBottom: '20px' }}>
@@ -208,7 +244,7 @@ export default function InterviewSimulator() {
                 />
               </div>
 
-              {/* LINHA 2: EMPRESA E NÍVEL (FLEX PARA ALINHAMENTO PERFEITO) */}
+              {/* LINHA 2: EMPRESA E NÍVEL */}
               <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
                 <div style={{ flex: 1 }}>
                     <label style={labelStyle}>
@@ -232,7 +268,7 @@ export default function InterviewSimulator() {
                       style={{ 
                         ...inputStyle,
                         cursor: 'pointer',
-                        appearance: 'none', // Remove estilo padrão do sistema
+                        appearance: 'none', 
                         backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
                         backgroundRepeat: 'no-repeat',
                         backgroundPosition: 'right 10px center',
@@ -259,7 +295,7 @@ export default function InterviewSimulator() {
                   style={{ 
                     width: '100%', 
                     flexGrow: 1, 
-                    minHeight: '150px',
+                    minHeight: '200px', // Altura mínima confortável
                     padding: '15px', 
                     borderRadius: '10px', 
                     backgroundColor: '#111827', 
@@ -305,14 +341,13 @@ export default function InterviewSimulator() {
           </div>
 
           {/* LADO DIREITO: CHAT INTERATIVO */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             borderRadius: '20px', 
             border: '1px solid #10b981', 
             display: 'flex',
             flexDirection: 'column',
             minHeight: '600px', 
-            height: '100%',
             overflow: 'hidden'
           }}>
             <div style={{ padding: '20px', borderBottom: '1px solid #374151', backgroundColor: '#111827', display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -369,7 +404,7 @@ export default function InterviewSimulator() {
 
                                 {visibleTips[idx] && (
                                     <div style={{ marginTop: '10px', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '15px', borderRadius: '10px', borderLeft: '3px solid #10b981', color: '#d1d5db', fontSize: '0.9rem', marginLeft: '10px' }}>
-                                        <strong>💡 Dica do Especialista:</strong> {q.a}
+                                            <strong>💡 Dica do Especialista:</strong> {q.a}
                                     </div>
                                 )}
                             </div>
@@ -391,12 +426,6 @@ export default function InterviewSimulator() {
           </div>
 
         </div>
-        
-        <style>{`
-            @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-            .loader { border: 3px solid #374151; border-top: 3px solid #10b981; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
-            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        `}</style>
 
         <ExemplosSection ferramentaId="interview-simulator" />
       </div>

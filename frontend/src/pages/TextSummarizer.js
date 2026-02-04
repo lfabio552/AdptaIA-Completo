@@ -8,7 +8,7 @@ import {
   Bars3BottomLeftIcon, 
   DocumentTextIcon, 
   ClipboardDocumentCheckIcon, 
-  SparklesIcon,
+  SparklesIcon, 
   AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/solid';
 
@@ -82,7 +82,39 @@ export default function TextSummarizer() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', padding: '40px 20px', fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      // MUDANÇA: Gradiente Azul/Ciano no fundo
+      background: 'radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15) 0%, #0f1016 60%)',
+      color: 'white', 
+      padding: '40px 20px', 
+      fontFamily: "'Inter', sans-serif" 
+    }}>
+      
+      {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
+      <style>{`
+        .tool-grid {
+          display: grid;
+          gap: 40px;
+          grid-template-columns: 1fr;
+        }
+        
+        @media (min-width: 1024px) {
+          .tool-grid {
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: 1fr; /* Garante altura igual */
+          }
+        }
+
+        /* Card base para garantir altura */
+        .tool-card {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+      `}</style>
+
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* CABEÇALHO */}
@@ -95,7 +127,16 @@ export default function TextSummarizer() {
           }}>
             <Bars3BottomLeftIcon style={{ width: '32px', color: 'white' }} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+          <h1 style={{ 
+            fontSize: '2.5rem', 
+            fontWeight: '800', 
+            marginBottom: '10px',
+            // MUDANÇA: Gradiente no texto
+            background: 'linear-gradient(to right, #ffffff, #67e8f9, #3b82f6)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             Resumidor Inteligente
           </h1>
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
@@ -132,24 +173,17 @@ export default function TextSummarizer() {
         )}
 
         {/* GRID PRINCIPAL */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth < 1024 ? '1fr' : '1fr 1fr', 
-          gap: '40px',
-          alignItems: 'stretch'
-        }}>
+        <div className="tool-grid">
           
           {/* LADO ESQUERDO: INPUT */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
             border: '1px solid #374151',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            display: 'flex',
-            flexDirection: 'column'
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
-            <form onSubmit={handleSummarize} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+            <form onSubmit={handleSummarize} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
               
               <div style={{ marginBottom: '20px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
@@ -162,7 +196,7 @@ export default function TextSummarizer() {
                   required
                   style={{
                     width: '100%',
-                    flexGrow: 1,
+                    flexGrow: 1, // Preenche todo o espaço vertical
                     minHeight: '250px',
                     padding: '15px',
                     borderRadius: '12px',
@@ -193,7 +227,7 @@ export default function TextSummarizer() {
                     borderRadius: '10px', 
                     backgroundColor: '#111827', 
                     color: 'white', 
-                    border: '1px solid #4b5563',
+                    border: '1px solid #4b5563', 
                     height: '50px',
                     cursor: 'pointer'
                   }}
@@ -209,6 +243,7 @@ export default function TextSummarizer() {
                 type="submit"
                 disabled={isLoading}
                 style={{
+                  marginTop: 'auto',
                   width: '100%',
                   padding: '16px',
                   background: 'linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%)',
@@ -220,8 +255,7 @@ export default function TextSummarizer() {
                   fontSize: '1.1rem',
                   opacity: isLoading ? 0.7 : 1,
                   boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)',
-                  transition: 'transform 0.1s',
-                  marginTop: 'auto'
+                  transition: 'transform 0.1s'
                 }}
               >
                 {isLoading ? '🤖 Analisando e Resumindo...' : '✨ Gerar Resumo'}
@@ -236,7 +270,7 @@ export default function TextSummarizer() {
           </div>
 
           {/* LADO DIREITO: RESUMO */}
-          <div style={{ 
+          <div className="tool-card" style={{ 
             backgroundColor: '#1f2937', 
             padding: '30px', 
             borderRadius: '20px', 
@@ -270,11 +304,11 @@ export default function TextSummarizer() {
             </div>
             
             <div style={{ 
-              flexGrow: 1,
+              flexGrow: 1, 
               backgroundColor: '#111827', 
               padding: '25px', 
               borderRadius: '12px',
-              fontFamily: "'Segoe UI', Roboto, sans-serif", // Fonte limpa para leitura
+              fontFamily: "'Segoe UI', Roboto, sans-serif", 
               fontSize: '1rem',
               color: '#e5e7eb', 
               lineHeight: '1.7',

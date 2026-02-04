@@ -5,7 +5,7 @@ import {
   SparklesIcon, TableCellsIcon, DocumentTextIcon, VideoCameraIcon,
   BriefcaseIcon, AcademicCapIcon, PencilSquareIcon, DevicePhoneMobileIcon,
   LanguageIcon, ChatBubbleLeftRightIcon, UserCircleIcon, ClockIcon,
-  PhotoIcon, FireIcon
+  PhotoIcon, FireIcon, CurrencyDollarIcon
 } from '@heroicons/react/24/solid';
 
 // --- DADOS DAS FERRAMENTAS ---
@@ -280,7 +280,7 @@ export default function HomePage() {
 
   const handleSubscribe = async () => {
     if (!user) return alert("Faça login primeiro!");
-    alert("Redirecionando...");
+    alert("Redirecionando para pagamentos...");
   };
 
   return (
@@ -422,7 +422,7 @@ export default function HomePage() {
             <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'white', textDecoration: 'none' }}>Adapta IA</span>
         </Link>
         
-        {/* === LINK RESTAURADO AQUI === */}
+        {/* === LINK CENTRAL (SÓ APARECE NO DESKTOP) === */}
         {windowWidth > 768 && (
           <div style={{ display: 'flex', gap: '25px', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
             <Link to="/precos" style={{ color: '#d1d5db', textDecoration: 'none', fontWeight: '500', fontSize: '0.95rem' }}>
@@ -432,6 +432,24 @@ export default function HomePage() {
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          
+          {/* === NOVO: LINK DE PLANOS PARA MOBILE (SÓ APARECE EM TELAS PEQUENAS) === */}
+          {windowWidth <= 768 && (
+             <Link to="/precos" style={{ 
+                background: 'rgba(245, 158, 11, 0.15)',
+                color: '#fbbf24', 
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                padding: '6px 12px', 
+                borderRadius: '50px',
+                textDecoration: 'none',
+                fontSize: '0.85rem',
+                fontWeight: 'bold',
+                display: 'flex', alignItems: 'center', gap: '5px'
+             }}>
+                <CurrencyDollarIcon style={{width: '16px'}} /> Planos
+             </Link>
+          )}
+
           {user && (
             <Link to="/meu-historico" style={{ 
                color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px',
@@ -448,14 +466,17 @@ export default function HomePage() {
                   <button onClick={handleSubscribe} style={{ 
                     background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)', border: 'none', 
                     padding: '8px 20px', borderRadius: '50px', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem',
-                    boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)'
+                    boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)',
+                    display: windowWidth < 768 ? 'none' : 'block' // Esconde "Assinar PRO" grande no mobile se já tiver o botão de planos, ou mantém se preferir
                   }}>Assinar PRO</button>
                ) : (
                   <span style={{ background: '#3b0764', padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', color: '#d8b4fe', border: '1px solid #a855f7' }}>PRO</span>
                )}
-               <button onClick={handleLogout} title="Sair" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                  <UserCircleIcon style={{ width: '36px', color: '#6b7280' }} />
-               </button>
+               
+               {/* LINK PARA O PERFIL (PÁGINA QUE VAMOS CRIAR AGORA) */}
+               <Link to="/meu-perfil" title="Meu Perfil" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}>
+                  <UserCircleIcon style={{ width: '36px' }} />
+               </Link>
             </div>
           ) : (
             <Link to="/login" style={{ background: '#fff', color: '#000', padding: '8px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: 'bold' }}>Login</Link>
@@ -495,9 +516,29 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* FOOTER */}
-      <footer style={{ textAlign: 'center', color: '#6b7280', padding: '60px 20px', borderTop: '1px solid #1f2937', marginTop: '60px' }}>
-        <p>&copy; {new Date().getFullYear()} Adapta IA. Todas as ferramentas em um só lugar.</p>
+      {/* FOOTER - ATUALIZADO PARA O STRIPE */}
+      <footer style={{ 
+        textAlign: 'center', 
+        color: '#9ca3af', 
+        padding: '60px 20px', 
+        borderTop: '1px solid #1f2937', 
+        marginTop: '60px',
+        fontSize: '0.9rem'
+      }}>
+        <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'center', gap: '20px' }}>
+          {/* Links obrigatórios para o Stripe */}
+          <Link to="/termos" style={{ color: '#d1d5db', textDecoration: 'none' }} onMouseOver={(e) => e.target.style.color = '#fff'} onMouseOut={(e) => e.target.style.color = '#d1d5db'}>
+            Termos de Uso
+          </Link>
+          <span>•</span>
+          <Link to="/termos" style={{ color: '#d1d5db', textDecoration: 'none' }} onMouseOver={(e) => e.target.style.color = '#fff'} onMouseOut={(e) => e.target.style.color = '#d1d5db'}>
+            Política de Privacidade
+          </Link>
+        </div>
+        <p>&copy; {new Date().getFullYear()} Adapta IA. Todos os direitos reservados.</p>
+        <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '10px' }}>
+          Precisa de ajuda? Entre em contato: suporte@adaptaia.com.br
+        </p>
       </footer>
 
     </div>
