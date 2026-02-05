@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 import { 
   SparklesIcon, TableCellsIcon, DocumentTextIcon, VideoCameraIcon,
   BriefcaseIcon, AcademicCapIcon, PencilSquareIcon, DevicePhoneMobileIcon,
-  LanguageIcon, ChatBubbleLeftRightIcon, UserCircleIcon, ClockIcon,
+  LanguageIcon, ChatBubbleLeftRightIcon, UserCircleIcon,
   PhotoIcon, FireIcon, CurrencyDollarIcon
 } from '@heroicons/react/24/solid';
 
@@ -273,11 +273,6 @@ export default function HomePage() {
     getUserData();
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.reload();
-  };
-
   const handleSubscribe = async () => {
     if (!user) return alert("Faça login primeiro!");
     alert("Redirecionando para pagamentos...");
@@ -286,7 +281,7 @@ export default function HomePage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', fontFamily: "'Inter', sans-serif", overflowX: 'hidden' }}>
       
-      {/* CSS GRID DEFINITIVO - SEM SOBREPOSIÇÃO */}
+      {/* CSS GRID DEFINITIVO */}
       <style>{`
         .bento-grid {
           display: flex;
@@ -297,7 +292,6 @@ export default function HomePage() {
           box-sizing: border-box;
         }
         
-        /* Define altura padrão para cards no mobile */
         .bento-item { 
           min-height: 220px; 
           box-sizing: border-box;
@@ -315,90 +309,26 @@ export default function HomePage() {
           }
 
           /* === MAPA DE POSIÇÕES ABSOLUTAS === */
+          .item-image-gen { grid-column: 1 / 3; grid-row: 1 / 3; }
+          .item-image-prompt { grid-column: 3 / 5; grid-row: 1 / 2; }
+          .item-social-media { grid-column: 3 / 4; grid-row: 2 / 4; }
+          .item-chat-pdf { grid-column: 4 / 5; grid-row: 2 / 3; }
+          .item-spreadsheet { grid-column: 1 / 3; grid-row: 3 / 4; }
+          .item-translator { grid-column: 4 / 5; grid-row: 3 / 4; }
+          .item-veo { grid-column: 1 / 3; grid-row: 4 / 5; }
+          .item-interview { grid-column: 3 / 4; grid-row: 4 / 5; }
+          .item-study { grid-column: 4 / 5; grid-row: 4 / 5; }
+          .item-cover-letter { grid-column: 1 / 2; grid-row: 5 / 6; }
+          .item-abnt { grid-column: 2 / 3; grid-row: 5 / 6; }
+          .item-essay { grid-column: 3 / 4; grid-row: 5 / 6; }
+          .item-summary { grid-column: 4 / 5; grid-row: 5 / 6; }
           
-          /* Linha 1-2: Big Card (2x2) */
-          .item-image-gen { 
-            grid-column: 1 / 3; 
-            grid-row: 1 / 3; 
-          }
-          
-          /* Linha 1: Wide Card (2x1) - Prompt de Imagem */
-          .item-image-prompt { 
-            grid-column: 3 / 5; 
-            grid-row: 1 / 2; 
-          }
-          
-          /* Linha 2-3: Tall Card (1x2) - Social Media */
-          .item-social-media { 
-            grid-column: 3 / 4; 
-            grid-row: 2 / 4; 
-          }
-          
-          /* Linha 2: Normal Card - Chat PDF */
-          .item-chat-pdf { 
-            grid-column: 4 / 5; 
-            grid-row: 2 / 3; 
-          }
-          
-          /* Linha 3: Wide Card (2x1) - Excel */
-          .item-spreadsheet { 
-            grid-column: 1 / 3; 
-            grid-row: 3 / 4; 
-          }
-          
-          /* Linha 3: Normal Card - Tradutor */
-          .item-translator { 
-            grid-column: 4 / 5; 
-            grid-row: 3 / 4; 
-          }
-          
-          /* Linha 4: Wide Card (2x1) - Vídeo */
-          .item-veo { 
-            grid-column: 1 / 3; 
-            grid-row: 4 / 5; 
-          }
-          
-          /* Linha 4: Normal Card - Entrevista */
-          .item-interview { 
-            grid-column: 3 / 4; 
-            grid-row: 4 / 5; 
-          }
-          
-          /* Linha 4: Normal Card - Estudo */
-          .item-study { 
-            grid-column: 4 / 5; 
-            grid-row: 4 / 5; 
-          }
-          
-          /* Linha 5: 4 Normal Cards */
-          .item-cover-letter { 
-            grid-column: 1 / 2; 
-            grid-row: 5 / 6; 
-          }
-          
-          .item-abnt { 
-            grid-column: 2 / 3; 
-            grid-row: 5 / 6; 
-          }
-          
-          .item-essay { 
-            grid-column: 3 / 4; 
-            grid-row: 5 / 6; 
-          }
-          
-          .item-summary { 
-            grid-column: 4 / 5; 
-            grid-row: 5 / 6; 
-          }
-          
-          /* Garantir que os cards se ajustem ao container */
           .bento-item {
             width: 100%;
             height: 100%;
           }
         }
         
-        /* Adiciona media query para telas muito grandes */
         @media (min-width: 1600px) {
           .bento-grid {
             max-width: 1600px;
@@ -409,7 +339,9 @@ export default function HomePage() {
 
       {/* NAVBAR */}
       <div style={{ 
-        padding: '15px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        // AQUI ESTÁ A CORREÇÃO: Padding menor no mobile para caber os botões
+        padding: windowWidth < 768 ? '15px 20px' : '15px 40px', 
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(15, 16, 22, 0.95)', 
         backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 100, width: '100%', boxSizing: 'border-box'
       }}>
@@ -419,6 +351,7 @@ export default function HomePage() {
               width: '38px', height: '38px', borderRadius: '10px', 
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px'
             }}>⚡</div>
+            {/* Esconde o texto 'Adapta IA' em telas MUITO pequenas se precisar, mas geralmente cabe */}
             <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'white', textDecoration: 'none' }}>Adapta IA</span>
         </Link>
         
@@ -431,34 +364,27 @@ export default function HomePage() {
           </div>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           
-          {/* === NOVO: LINK DE PLANOS PARA MOBILE (SÓ APARECE EM TELAS PEQUENAS) === */}
+          {/* === LINK DE PLANOS PARA MOBILE (SÓ APARECE EM TELAS PEQUENAS) === */}
           {windowWidth <= 768 && (
              <Link to="/precos" style={{ 
-                background: 'rgba(245, 158, 11, 0.15)',
-                color: '#fbbf24', 
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                padding: '6px 12px', 
-                borderRadius: '50px',
-                textDecoration: 'none',
-                fontSize: '0.85rem',
-                fontWeight: 'bold',
-                display: 'flex', alignItems: 'center', gap: '5px'
+               background: 'rgba(245, 158, 11, 0.15)',
+               color: '#fbbf24', 
+               border: '1px solid rgba(245, 158, 11, 0.3)',
+               padding: '6px 12px', 
+               borderRadius: '50px',
+               textDecoration: 'none',
+               fontSize: '0.85rem',
+               fontWeight: 'bold',
+               display: 'flex', alignItems: 'center', gap: '5px',
+               whiteSpace: 'nowrap' // Garante que não quebre linha
              }}>
-                <CurrencyDollarIcon style={{width: '16px'}} /> Planos
+               <CurrencyDollarIcon style={{width: '16px'}} /> Planos
              </Link>
           )}
 
-          {user && (
-            <Link to="/meu-historico" style={{ 
-               color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px',
-               fontSize: '0.9rem', padding: '6px 12px', borderRadius: '50px', backgroundColor: '#1f2937', border: '1px solid #374151'
-            }}>
-              <ClockIcon style={{ width: '16px', color: '#22d3ee' }} /> 
-              <span style={{display: windowWidth < 768 ? 'none' : 'inline'}}>Histórico</span>
-            </Link>
-          )}
+          {/* *** BOTÃO HISTÓRICO REMOVIDO DAQUI *** */}
 
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -467,13 +393,13 @@ export default function HomePage() {
                     background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)', border: 'none', 
                     padding: '8px 20px', borderRadius: '50px', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem',
                     boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)',
-                    display: windowWidth < 768 ? 'none' : 'block' // Esconde "Assinar PRO" grande no mobile se já tiver o botão de planos, ou mantém se preferir
+                    display: windowWidth < 768 ? 'none' : 'block' 
                   }}>Assinar PRO</button>
                ) : (
                   <span style={{ background: '#3b0764', padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', color: '#d8b4fe', border: '1px solid #a855f7' }}>PRO</span>
                )}
                
-               {/* LINK PARA O PERFIL (PÁGINA QUE VAMOS CRIAR AGORA) */}
+               {/* LINK PARA O PERFIL */}
                <Link to="/meu-perfil" title="Meu Perfil" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}>
                   <UserCircleIcon style={{ width: '36px' }} />
                </Link>
@@ -516,7 +442,7 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* FOOTER - ATUALIZADO PARA O STRIPE */}
+      {/* FOOTER */}
       <footer style={{ 
         textAlign: 'center', 
         color: '#9ca3af', 
@@ -526,7 +452,6 @@ export default function HomePage() {
         fontSize: '0.9rem'
       }}>
         <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'center', gap: '20px' }}>
-          {/* Links obrigatórios para o Stripe */}
           <Link to="/termos" style={{ color: '#d1d5db', textDecoration: 'none' }} onMouseOver={(e) => e.target.style.color = '#fff'} onMouseOut={(e) => e.target.style.color = '#d1d5db'}>
             Termos de Uso
           </Link>
