@@ -47,7 +47,7 @@ try:
     genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
     
     # ATENÇÃO: É OBRIGATÓRIO atualizar o 'google-generativeai' no requirements.txt para funcionar
-    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05') 
+    model = genai.GenerativeModel('gemini-2.0-flash-lite-001') 
     
     print("Modelo Gemini 1.5 Flash configurado com sucesso!")
 except Exception as e:
