@@ -12,7 +12,7 @@
 // const API_BASE_URL = 'http://localhost:5000';
 
 // ☁️ MODO NUVEM (Desativado: Use este quando for enviar para a Vercel)
-const API_BASE_URL = 'https://meu-gerador-backend.onrender.com';
+const API_BASE_URL = 'https://adptaia-completo.onrender.com';
 
 // ==================================================================
 
