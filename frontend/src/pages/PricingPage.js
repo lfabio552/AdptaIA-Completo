@@ -24,7 +24,7 @@ export default function PricingPage() {
     
     // Se for plano anual, você pode mudar o endpoint ou passar um parâmetro extra
     // Por enquanto, vamos manter o padrão, mas a lógica está pronta para expansão
-    const endpoint = 'https://meu-gerador-backend.onrender.com/create-checkout-session';
+    const endpoint = 'https://adptaia-completo.onrender.com/create-checkout-session';
     
     try {
       const response = await fetch(endpoint, {
