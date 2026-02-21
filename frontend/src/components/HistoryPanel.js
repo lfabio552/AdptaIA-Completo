@@ -30,7 +30,7 @@ export default function HistoryPanel({ toolType, isOpen = true, onClose = null }
   const loadHistory = async (userId) => {
     setLoading(true);
     try {
-      const response = await fetch('https://meu-gerador-backend.onrender.com/get-history', {
+      const response = await fetch('https://adptaia-completo.onrender.com/get-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
