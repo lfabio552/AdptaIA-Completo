@@ -273,11 +273,6 @@ export default function HomePage() {
     getUserData();
   }, []);
 
-  const handleSubscribe = async () => {
-    if (!user) return alert("Faça login primeiro!");
-    alert("Redirecionando para pagamentos...");
-  };
-
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f1016', color: 'white', fontFamily: "'Inter', sans-serif", overflowX: 'hidden' }}>
       
@@ -339,7 +334,6 @@ export default function HomePage() {
 
       {/* NAVBAR */}
       <div style={{ 
-        // AQUI ESTÁ A CORREÇÃO: Padding menor no mobile para caber os botões
         padding: windowWidth < 768 ? '15px 20px' : '15px 40px', 
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(15, 16, 22, 0.95)', 
@@ -351,7 +345,6 @@ export default function HomePage() {
               width: '38px', height: '38px', borderRadius: '10px', 
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px'
             }}>⚡</div>
-            {/* Esconde o texto 'Adapta IA' em telas MUITO pequenas se precisar, mas geralmente cabe */}
             <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'white', textDecoration: 'none' }}>Adapta IA</span>
         </Link>
         
@@ -378,29 +371,30 @@ export default function HomePage() {
                fontSize: '0.85rem',
                fontWeight: 'bold',
                display: 'flex', alignItems: 'center', gap: '5px',
-               whiteSpace: 'nowrap' // Garante que não quebre linha
+               whiteSpace: 'nowrap'
              }}>
                <CurrencyDollarIcon style={{width: '16px'}} /> Planos
              </Link>
           )}
 
-          {/* *** BOTÃO HISTÓRICO REMOVIDO DAQUI *** */}
-
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                {!isPro ? (
-                  <button onClick={handleSubscribe} style={{ 
-                    background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)', border: 'none', 
-                    padding: '8px 20px', borderRadius: '50px', color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem',
+                  <Link to="/precos" style={{ 
+                    background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)',
+                    padding: '8px 20px', borderRadius: '50px', color: '#fff', fontWeight: 'bold', 
+                    fontSize: '0.9rem', textDecoration: 'none',
                     boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)',
-                    display: windowWidth < 768 ? 'none' : 'block' 
-                  }}>Assinar PRO</button>
+                    display: windowWidth < 768 ? 'none' : 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    whiteSpace: 'nowrap'
+                  }}>Assinar PRO</Link>
                ) : (
                   <span style={{ background: '#3b0764', padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', color: '#d8b4fe', border: '1px solid #a855f7' }}>PRO</span>
                )}
                
                {/* LINK PARA O PERFIL */}
-               <Link to="/meu-perfil" title="Meu Perfil" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280' }}>
+               <Link to="/meu-perfil" title="Meu Perfil" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center' }}>
                   <UserCircleIcon style={{ width: '36px' }} />
                </Link>
             </div>
