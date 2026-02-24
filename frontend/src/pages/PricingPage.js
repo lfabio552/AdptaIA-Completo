@@ -87,25 +87,27 @@ export default function PricingPage() {
 
           {/* TOGGLE MENSAL / ANUAL CORRIGIDO */}
           <div style={{ 
-            display: 'inline-flex', 
-            backgroundColor: '#1f2937', 
-            padding: '4px', // Padding interno para criar espaço entre a borda e o botão
-            borderRadius: '50px',
+            display: 'inline-flex', // Garante que o container se ajuste ao conteúdo
+            alignItems: 'center',   // CENTRALIZA VERTICALMENTE (Corrige o bug da borda)
+            justifyContent: 'center',
+            backgroundColor: '#111827', // Fundo mais escuro para contraste
+            padding: '6px', // Espaço maior entre a borda e o botão
+            borderRadius: '100px',
             border: '1px solid #374151',
-            position: 'relative',
-            gap: '4px' // Espaço entre os botões
+            gap: '5px' // Espaço entre os botões
           }}>
             <button 
               onClick={() => setBillingCycle('monthly')}
               style={{
-                padding: '8px 20px',
-                borderRadius: '50px',
+                padding: '10px 24px', // Altura confortável
+                borderRadius: '100px',
                 border: 'none',
-                backgroundColor: billingCycle === 'monthly' ? '#374151' : 'transparent', // Cinza mais claro quando ativo
+                backgroundColor: billingCycle === 'monthly' ? '#374151' : 'transparent',
                 color: billingCycle === 'monthly' ? '#fff' : '#9ca3af',
                 fontWeight: 'bold',
                 cursor: 'pointer',
-                transition: 'all 0.3s',
+                transition: 'all 0.3s ease',
+                fontSize: '0.95rem',
                 boxShadow: billingCycle === 'monthly' ? '0 2px 5px rgba(0,0,0,0.2)' : 'none'
               }}
             >
@@ -114,14 +116,15 @@ export default function PricingPage() {
             <button 
               onClick={() => setBillingCycle('yearly')}
               style={{
-                padding: '8px 20px',
-                borderRadius: '50px',
+                padding: '10px 24px',
+                borderRadius: '100px',
                 border: 'none',
-                backgroundColor: billingCycle === 'yearly' ? '#7e22ce' : 'transparent', // Roxo quando ativo
+                backgroundColor: billingCycle === 'yearly' ? '#7e22ce' : 'transparent',
                 color: billingCycle === 'yearly' ? '#fff' : '#9ca3af',
                 fontWeight: 'bold',
                 cursor: 'pointer',
-                transition: 'all 0.3s',
+                transition: 'all 0.3s ease',
+                fontSize: '0.95rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
@@ -133,8 +136,8 @@ export default function PricingPage() {
                 fontSize: '0.75rem', 
                 background: '#fbbf24', 
                 color: '#000', 
-                padding: '2px 6px', 
-                borderRadius: '6px',
+                padding: '2px 8px', 
+                borderRadius: '12px',
                 fontWeight: '800'
               }}>-20%</span>
             </button>
