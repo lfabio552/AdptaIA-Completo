@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { CheckIcon, XMarkIcon, SparklesIcon } from '@heroicons/react/24/solid';
+import { CheckIcon, SparklesIcon } from '@heroicons/react/24/solid';
 
 export default function PricingPage() {
   const [user, setUser] = useState(null);
@@ -17,13 +17,11 @@ export default function PricingPage() {
 
   const handleSubscribe = async (planType) => {
     if (!user) {
-      // Redireciona para login se não estiver logado
       window.location.href = '/login';
       return;
     }
     
-    // Se for plano anual, você pode mudar o endpoint ou passar um parâmetro extra
-    // Por enquanto, vamos manter o padrão, mas a lógica está pronta para expansão
+    // Endpoint do backend
     const endpoint = 'https://adptaia-completo.onrender.com/create-checkout-session';
     
     try {
@@ -33,7 +31,7 @@ export default function PricingPage() {
         body: JSON.stringify({ 
             user_id: user.id, 
             email: user.email,
-            cycle: billingCycle // Envia para o backend saber qual preço cobrar
+            cycle: billingCycle // Envia 'monthly' ou 'yearly'
         }),
       });
       
@@ -48,7 +46,7 @@ export default function PricingPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: '#0f1016', // Fundo Dark da Home
+      backgroundColor: '#0f1016',
       color: 'white',
       fontFamily: "'Inter', sans-serif",
       padding: '40px 20px',
@@ -87,26 +85,28 @@ export default function PricingPage() {
             Desbloqueie todo o potencial da IA. Cancele quando quiser.
           </p>
 
-          {/* TOGGLE MENSAL / ANUAL */}
+          {/* TOGGLE MENSAL / ANUAL CORRIGIDO */}
           <div style={{ 
             display: 'inline-flex', 
             backgroundColor: '#1f2937', 
-            padding: '5px', 
+            padding: '4px', // Padding interno para criar espaço entre a borda e o botão
             borderRadius: '50px',
             border: '1px solid #374151',
-            position: 'relative'
+            position: 'relative',
+            gap: '4px' // Espaço entre os botões
           }}>
             <button 
               onClick={() => setBillingCycle('monthly')}
               style={{
-                padding: '10px 25px',
+                padding: '8px 20px',
                 borderRadius: '50px',
                 border: 'none',
-                backgroundColor: billingCycle === 'monthly' ? '#374151' : 'transparent',
+                backgroundColor: billingCycle === 'monthly' ? '#374151' : 'transparent', // Cinza mais claro quando ativo
                 color: billingCycle === 'monthly' ? '#fff' : '#9ca3af',
                 fontWeight: 'bold',
                 cursor: 'pointer',
-                transition: 'all 0.3s'
+                transition: 'all 0.3s',
+                boxShadow: billingCycle === 'monthly' ? '0 2px 5px rgba(0,0,0,0.2)' : 'none'
               }}
             >
               Mensal
@@ -114,20 +114,29 @@ export default function PricingPage() {
             <button 
               onClick={() => setBillingCycle('yearly')}
               style={{
-                padding: '10px 25px',
+                padding: '8px 20px',
                 borderRadius: '50px',
                 border: 'none',
-                backgroundColor: billingCycle === 'yearly' ? '#7e22ce' : 'transparent',
+                backgroundColor: billingCycle === 'yearly' ? '#7e22ce' : 'transparent', // Roxo quando ativo
                 color: billingCycle === 'yearly' ? '#fff' : '#9ca3af',
                 fontWeight: 'bold',
                 cursor: 'pointer',
                 transition: 'all 0.3s',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px'
+                gap: '8px',
+                boxShadow: billingCycle === 'yearly' ? '0 2px 10px rgba(126, 34, 206, 0.3)' : 'none'
               }}
             >
-              Anual <span style={{ fontSize: '0.7rem', background: '#fbbf24', color: '#000', padding: '2px 6px', borderRadius: '10px' }}>-20%</span>
+              Anual 
+              <span style={{ 
+                fontSize: '0.75rem', 
+                background: '#fbbf24', 
+                color: '#000', 
+                padding: '2px 6px', 
+                borderRadius: '6px',
+                fontWeight: '800'
+              }}>-20%</span>
             </button>
           </div>
         </div>
@@ -138,7 +147,7 @@ export default function PricingPage() {
           flexWrap: 'wrap',
           gap: '30px',
           justifyContent: 'center',
-          alignItems: 'stretch' // Estica para terem mesma altura
+          alignItems: 'stretch'
         }}>
           
           {/* PLANO GRÁTIS */}
@@ -191,21 +200,21 @@ export default function PricingPage() {
             flex: '1',
             minWidth: '300px',
             maxWidth: '380px',
-            backgroundColor: '#1f2937', // Fundo escuro
+            backgroundColor: '#1f2937',
             padding: '40px',
             borderRadius: '24px',
-            border: '2px solid #a855f7', // Borda Roxa
+            border: '2px solid #a855f7',
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
             boxShadow: '0 0 40px rgba(168, 85, 247, 0.15)',
-            transform: 'scale(1.02)' // Levemente maior
+            transform: 'scale(1.02)'
           }}>
             <div style={{
               position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)',
               background: 'linear-gradient(90deg, #a855f7 0%, #ec4899 100%)', color: '#fff',
               padding: '6px 20px', borderRadius: '20px', fontWeight: 'bold', fontSize: '0.85rem',
-              display: 'flex', alignItems: 'center', gap: '5px'
+              display: 'flex', alignItems: 'center', gap: '5px', width: 'max-content'
             }}>
               <SparklesIcon style={{ width: '16px' }} /> RECOMENDADO
             </div>
