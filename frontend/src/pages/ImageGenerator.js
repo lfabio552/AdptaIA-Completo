@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // Necessário para o Pop-up de Upgrade
 import { supabase } from '../supabaseClient';
 import ExemplosSection from '../components/ExemplosSection';
 import config from '../config';
@@ -19,6 +20,9 @@ export default function ImageGenerator() {
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
+  
+  // ESTADO PARA O POP-UP DE CRÉDITOS
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const styles = {
     realistic: "Fotorrealista, detalhado, 8K",
@@ -71,8 +75,14 @@ export default function ImageGenerator() {
         }),
       });
 
+      // LÓGICA DE BLOQUEIO (ERRO 402 - SEM CRÉDITOS)
+      if (response.status === 402) {
+        setShowUpgradeModal(true);
+        setIsLoading(false);
+        return;
+      }
+
       const data = await response.json();
-      if (response.status === 402) throw new Error(data.error);
       if (!response.ok) throw new Error(data.error || 'Erro ao gerar imagem.');
 
       setImageUrl(data.image_url);
@@ -85,7 +95,7 @@ export default function ImageGenerator() {
         { 
           style: style,
           image_url: data.image_url,
-          credits_used: 2
+          credits_used: 1 // Atualizado para 1, conforme backend
         }
       );
 
@@ -117,37 +127,36 @@ export default function ImageGenerator() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      // MUDANÇA: Gradiente Dourado (Gold/Amber)
-      background: 'radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.15) 0%, #0f1016 60%)',
+      backgroundColor: '#0f1016', // Fundo completamente escuro
       color: 'white', 
       padding: '40px 20px', 
-      fontFamily: "'Inter', sans-serif" 
+      fontFamily: "'Inter', sans-serif",
+      position: 'relative',
+      overflow: 'hidden' // Garante que a luz não crie barra de rolagem
     }}>
+      
+      {/* LUZ DE FUNDO (GLOW SUTIL DOURADO ATRÁS DO TÍTULO) */}
+      <div style={{
+        position: 'absolute',
+        top: '-150px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '600px',
+        height: '500px',
+        background: 'radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, rgba(15, 16, 22, 0) 70%)',
+        filter: 'blur(40px)',
+        zIndex: 0,
+        pointerEvents: 'none'
+      }}></div>
       
       {/* CSS RESPONSIVO PARA ALINHAMENTO */}
       <style>{`
-        .tool-grid {
-          display: grid;
-          gap: 40px;
-          grid-template-columns: 1fr;
-        }
-        
-        @media (min-width: 1024px) {
-          .tool-grid {
-            grid-template-columns: 1fr 1fr;
-            grid-auto-rows: 1fr;
-          }
-        }
-
-        .tool-card {
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          box-sizing: border-box;
-        }
+        .tool-grid { display: grid; gap: 40px; grid-template-columns: 1fr; }
+        @media (min-width: 1024px) { .tool-grid { grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; } }
+        .tool-card { height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
       `}</style>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         
         {/* CABEÇALHO */}
         <div style={{ textAlign: 'center', marginBottom: '50px' }}>
@@ -163,7 +172,6 @@ export default function ImageGenerator() {
             fontSize: '2.5rem', 
             fontWeight: '800', 
             marginBottom: '10px',
-            // Texto Dourado
             background: 'linear-gradient(to right, #ffffff, #fbbf24, #f59e0b)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -174,9 +182,6 @@ export default function ImageGenerator() {
           <p style={{ color: '#9ca3af', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
             Transforme suas ideias em arte digital de alta resolução em segundos.
           </p>
-          <div style={{ marginTop: '15px', fontSize: '0.9rem', color: '#fbbf24', fontWeight: 'bold', border: '1px solid #fbbf24', display: 'inline-block', padding: '5px 15px', borderRadius: '20px' }}>
-            ⚠️ Custa 2 créditos por geração
-          </div>
         </div>
 
         {/* BOTÃO HISTÓRICO */}
@@ -230,7 +235,7 @@ export default function ImageGenerator() {
                   required
                   style={{
                     width: '100%',
-                    flexGrow: 1, // Preenche espaço vertical
+                    flexGrow: 1,
                     minHeight: '200px',
                     padding: '15px',
                     borderRadius: '12px',
@@ -386,13 +391,55 @@ export default function ImageGenerator() {
                         <span>Resolução:</span> <span style={{fontWeight: 'bold'}}>1024x1024</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fbbf24' }}>
-                        <span>Custo:</span> <span style={{fontWeight: 'bold'}}>2 Créditos</span>
+                        <span>Custo:</span> <span style={{fontWeight: 'bold'}}>1 Crédito</span>
                     </div>
                 </div>
             </div>
         </div>
 
       </div>
+
+      {/* MODAL DE CRÉDITOS ESGOTADOS */}
+      {showUpgradeModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, backdropFilter: 'blur(8px)'
+        }}>
+          <div style={{
+            backgroundColor: '#1f2937', padding: '40px', borderRadius: '24px',
+            maxWidth: '420px', width: '90%', textAlign: 'center',
+            border: '1px solid #f59e0b', boxShadow: '0 10px 50px rgba(245, 158, 11, 0.3)'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '10px' }}>🪙</div>
+            <h2 style={{ color: 'white', marginBottom: '15px', fontSize: '1.8rem', fontWeight: '800' }}>
+              Créditos Esgotados!
+            </h2>
+            <p style={{ color: '#9ca3af', marginBottom: '30px', fontSize: '1.05rem', lineHeight: '1.5' }}>
+              Você atingiu o limite do plano gratuito. Assine o <strong>Plano PRO</strong> para criar sem limites e ter acesso a todas as ferramentas premium.
+            </p>
+            <Link to="/precos" style={{
+              display: 'block', width: '100%', padding: '16px', boxSizing: 'border-box',
+              background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)', color: 'white',
+              borderRadius: '12px', fontWeight: 'bold', textDecoration: 'none',
+              marginBottom: '15px', fontSize: '1.1rem', boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)'
+            }}>
+              Ver Planos PRO 🚀
+            </Link>
+            <button 
+              onClick={() => setShowUpgradeModal(false)} 
+              style={{
+                background: 'transparent', border: 'none', color: '#9ca3af',
+                cursor: 'pointer', fontSize: '0.95rem', textDecoration: 'underline'
+              }}
+            >
+              Voltar para a ferramenta
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
