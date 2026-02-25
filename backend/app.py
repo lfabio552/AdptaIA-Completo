@@ -45,16 +45,13 @@ else:
 # --- CONFIGURAÇÃO GEMINI ---
 try:
     genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-    
-    # ATENÇÃO: É OBRIGATÓRIO atualizar o 'google-generativeai' no requirements.txt para funcionar
     model = genai.GenerativeModel('gemini-2.0-flash') 
-    
-    print("Modelo Gemini 1.5 Flash configurado com sucesso!")
+    print("Modelo Gemini configurado com sucesso!")
 except Exception as e:
     print(f"Erro ao configurar o modelo Gemini: {e}")
     model = None
 
-# --- FUNÇÃO DE CRÉDITOS ---
+# --- FUNÇÃO DE CRÉDITOS (BLINDADA) ---
 def check_and_deduct_credit(user_id):
     try:
         if not supabase: return False, "Erro de banco de dados."
@@ -63,18 +60,18 @@ def check_and_deduct_credit(user_id):
         if not response.data: return False, "Usuário não encontrado."
         
         user_data = response.data[0]
-        credits = user_data['credits']
+        credits = user_data.get('credits', 0) # Previne erro se for null
         is_pro = user_data.get('is_pro', False) 
         
-        # Lógica: Se for PRO, não desconta créditos (uso ilimitado)
-        # Se quiser limitar PRO também, remova este if.
+        # Se for PRO, uso liberado
         if is_pro: 
              return True, "Sucesso (VIP)"
             
+        # Se for Grátis, verifica saldo
         if credits <= 0: 
             return False, "Sem créditos. Assine o PRO!"
             
-        # Deduz 1 crédito
+        # Deduz 1 crédito do plano grátis
         new_credits = credits - 1
         supabase.table('profiles').update({'credits': new_credits}).eq('id', user_id).execute()
         return True, "Sucesso"
@@ -114,11 +111,11 @@ def generate_prompt():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
         
-        # CRÉDITOS (Opcional - Ative se quiser cobrar créditos aqui)
-        # user_id = data.get('user_id')
-        # if user_id:
-        #     s, m = check_and_deduct_credit(user_id)
-        #     if not s: return jsonify({'error': m}), 402
+        # BLOQUEIO DE CRÉDITOS
+        user_id = data.get('user_id')
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
 
         idea = data.get('idea')
         style = data.get('style', 'Cinematográfico (Padrão)')
@@ -143,7 +140,6 @@ def generate_prompt():
         })
         
     except Exception as e: 
-        print(f"Erro Prompt Imagem: {e}")
         return jsonify({'error': str(e)}), 500
 
 # 2. GERADOR DE PROMPT DE VÍDEO
@@ -153,6 +149,12 @@ def generate_veo3_prompt():
     try:
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
+
+        # BLOQUEIO DE CRÉDITOS
+        user_id = data.get('user_id')
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
 
         idea = data.get('idea')
         style = data.get('style', 'Cinematográfico')
@@ -180,12 +182,13 @@ def summarize_video():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
 
-        if data.get('user_id'):
-            s, m = check_and_deduct_credit(data.get('user_id'))
-            if not s: return jsonify({'error': m}), 402
+        # BLOQUEIO DE CRÉDITOS
+        user_id = data.get('user_id')
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
 
         yt = YouTube(data.get('url'))
-        # Tenta pegar legendas
         caption = yt.captions.get_by_language_code('pt')
         if not caption: caption = yt.captions.get_by_language_code('en')
         if not caption: caption = yt.captions.get_by_language_code('a.pt') 
@@ -209,10 +212,11 @@ def format_abnt():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
 
+        # BLOQUEIO DE CRÉDITOS
         user_id = data.get('user_id')
-        if user_id:
-            s, m = check_and_deduct_credit(user_id)
-            if not s: return jsonify({'error': m}), 402
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
         
         prompt = f"Formate o texto abaixo seguindo as normas da ABNT (use Markdown): {data.get('text')}"
         response = model.generate_content(prompt)
@@ -227,10 +231,11 @@ def summarize_text():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
 
+        # BLOQUEIO DE CRÉDITOS
         user_id = data.get('user_id')
-        if user_id:
-            s, m = check_and_deduct_credit(user_id)
-            if not s: return jsonify({'error': m}), 402
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
 
         text = data.get('text', '')
         if len(text) < 50: return jsonify({'error': 'Texto muito curto.'}), 400
@@ -240,7 +245,7 @@ def summarize_text():
         return jsonify({'summary': response.text})
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 6. DOWNLOAD DOCX
+# 6. DOWNLOAD DOCX (Não gasta crédito, é só utilitário)
 @app.route('/download-docx', methods=['POST'])
 def download_docx():
     try:
@@ -269,6 +274,13 @@ def generate_spreadsheet():
     try:
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
+        
+        # BLOQUEIO DE CRÉDITOS
+        user_id = data.get('user_id')
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
+        
         prompt_user = data.get('prompt')
         
         ai_prompt = f"""
@@ -316,6 +328,7 @@ def upload_document():
         file = request.files.get('file')
         if not user_id or not file: return jsonify({'error': 'Dados faltando'}), 400
         
+        # BLOQUEIO DE CRÉDITOS
         s, m = check_and_deduct_credit(user_id)
         if not s: return jsonify({'error': m}), 402
 
@@ -344,7 +357,12 @@ def ask_document():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
 
+        # BLOQUEIO DE CRÉDITOS
         user_id = data.get('user_id')
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
+
         question = data.get('question')
         
         q_emb = get_embedding(question)
@@ -366,9 +384,11 @@ def corporate_translator():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
         
-        # CRÉDITOS (Opcional)
-        # user_id = data.get('user_id')
-        # if user_id: check_and_deduct_credit(user_id)
+        # BLOQUEIO DE CRÉDITOS
+        user_id = data.get('user_id')
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
 
         text = data.get('text')
         tone = data.get('tone', 'Profissional')
@@ -387,6 +407,12 @@ def generate_social_media():
     try:
         data = request.get_json(force=True, silent=True) or {}
         if not data and request.data: data = json.loads(request.data.decode('utf-8'))
+        
+        # BLOQUEIO DE CRÉDITOS
+        user_id = data.get('user_id')
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
         
         topic = data.get('topic') or data.get('text')
         platform = data.get('platform', 'Instagram')
@@ -407,8 +433,11 @@ def correct_essay():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
         
+        # BLOQUEIO DE CRÉDITOS
         user_id = data.get('user_id')
-        if user_id: check_and_deduct_credit(user_id)
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
         
         prompt = f"""Corrija a redação sobre '{data.get('theme')}': '{data.get('essay')}'. 
         SAÍDA JSON: {{ "total_score": 0, "competencies": {{...}}, "feedback": "..." }}"""
@@ -427,6 +456,12 @@ def mock_interview():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
 
+        # BLOQUEIO DE CRÉDITOS
+        user_id = data.get('user_id')
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
+
         prompt = f"""Crie 5 perguntas de entrevista para vaga {data.get('role')} na empresa {data.get('company')}.
         SAÍDA JSON: {{ "questions": [{{ "q": "...", "a": "..." }}], "tips": ["..."] }}"""
         
@@ -443,6 +478,13 @@ def generate_study_material():
     if not model: return jsonify({'error': 'Erro modelo'}), 500
     try:
         data = request.get_json(force=True, silent=True) or {}
+        
+        # BLOQUEIO DE CRÉDITOS
+        user_id = data.get('user_id')
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
+        
         topic = data.get('topic')
         if not topic: return jsonify({'error': 'Tópico obrigatório'}), 400
 
@@ -459,8 +501,11 @@ def generate_cover_letter():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
         
+        # BLOQUEIO DE CRÉDITOS
         user_id = data.get('user_id')
-        if user_id: check_and_deduct_credit(user_id)
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        s, m = check_and_deduct_credit(user_id)
+        if not s: return jsonify({'error': m}), 402
         
         prompt = f"Escreva Cover Letter para vaga '{data.get('job_desc')}' baseada no CV '{data.get('cv_text')}'."
         response = model.generate_content(prompt)
@@ -476,10 +521,11 @@ def generate_image():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
 
+        # BLOQUEIO DE CRÉDITOS (A Imagem pode custar mais caro se quiser, ex: descontar 2. Aqui desconta 1)
         user_id = data.get('user_id')
-        if user_id:
-            success, message = check_and_deduct_credit(user_id)
-            if not success: return jsonify({'error': message}), 402
+        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
+        success, message = check_and_deduct_credit(user_id)
+        if not success: return jsonify({'error': message}), 402
 
         prompt = data.get('prompt', '')
         if len(prompt) < 5: return jsonify({'error': 'Prompt muito curto.'}), 400
