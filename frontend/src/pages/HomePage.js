@@ -253,6 +253,7 @@ function BentoCard({ tool }) {
 export default function HomePage() {
   const [user, setUser] = useState(null);
   const [isPro, setIsPro] = useState(false);
+  const [credits, setCredits] = useState(0); // ESTADO PARA CRÉDITOS
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -266,8 +267,12 @@ export default function HomePage() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
       if (user) {
-        const { data } = await supabase.from('profiles').select('is_pro').eq('id', user.id).single();
-        if (data) setIsPro(data.is_pro);
+        // Agora busca is_pro E credits do banco
+        const { data } = await supabase.from('profiles').select('is_pro, credits').eq('id', user.id).single();
+        if (data) {
+            setIsPro(data.is_pro);
+            setCredits(data.credits || 0); // Define os créditos (previne undefined)
+        }
       }
     };
     getUserData();
@@ -380,15 +385,29 @@ export default function HomePage() {
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                {!isPro ? (
-                  <Link to="/precos" style={{ 
-                    background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)',
-                    padding: '8px 20px', borderRadius: '50px', color: '#fff', fontWeight: 'bold', 
-                    fontSize: '0.9rem', textDecoration: 'none',
-                    boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)',
-                    display: windowWidth < 768 ? 'none' : 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                    whiteSpace: 'nowrap'
-                  }}>Assinar PRO</Link>
+                  <>
+                    {/* MOEDINHA DE CRÉDITOS */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)',
+                        padding: '6px 14px', borderRadius: '50px', color: '#e5e7eb',
+                        fontSize: '0.85rem', fontWeight: 'bold'
+                    }}>
+                        <span>🪙</span> 
+                        {windowWidth < 768 ? credits : `${credits} Créditos`}
+                    </div>
+
+                    {/* BOTÃO ASSINAR PRO */}
+                    <Link to="/precos" style={{ 
+                      background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)',
+                      padding: '8px 20px', borderRadius: '50px', color: '#fff', fontWeight: 'bold', 
+                      fontSize: '0.9rem', textDecoration: 'none',
+                      boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)',
+                      display: windowWidth < 768 ? 'none' : 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      whiteSpace: 'nowrap'
+                    }}>Assinar PRO</Link>
+                  </>
                ) : (
                   <span style={{ background: '#3b0764', padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', color: '#d8b4fe', border: '1px solid #a855f7' }}>PRO</span>
                )}
