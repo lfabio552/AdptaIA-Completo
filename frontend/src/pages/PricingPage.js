@@ -85,30 +85,30 @@ export default function PricingPage() {
             Desbloqueie todo o potencial da IA. Cancele quando quiser.
           </p>
 
-          {/* TOGGLE MENSAL / ANUAL CORRIGIDO */}
+          {/* TOGGLE MENSAL / ANUAL BLINDADO */}
           <div style={{ 
-            display: 'inline-flex', // Garante que o container se ajuste ao conteúdo
-            alignItems: 'center',   // CENTRALIZA VERTICALMENTE (Corrige o bug da borda)
-            justifyContent: 'center',
-            backgroundColor: '#111827', // Fundo mais escuro para contraste
-            padding: '6px', // Espaço maior entre a borda e o botão
-            borderRadius: '100px',
+            display: 'inline-flex', 
+            alignItems: 'center',
+            backgroundColor: '#111827', 
+            padding: '6px', // O respiro exato entre o botão e a borda
+            borderRadius: '9999px', // Arredondamento perfeito
             border: '1px solid #374151',
-            gap: '5px' // Espaço entre os botões
+            boxSizing: 'border-box'
           }}>
             <button 
               onClick={() => setBillingCycle('monthly')}
               style={{
-                padding: '10px 24px', // Altura confortável
-                borderRadius: '100px',
+                margin: 0, // Reset crucial para tirar margem invisível do navegador
+                boxSizing: 'border-box',
+                padding: '8px 24px', // Reduzido no eixo Y (cima/baixo) para ter folga
+                borderRadius: '9999px',
                 border: 'none',
                 backgroundColor: billingCycle === 'monthly' ? '#374151' : 'transparent',
                 color: billingCycle === 'monthly' ? '#fff' : '#9ca3af',
                 fontWeight: 'bold',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
-                fontSize: '0.95rem',
-                boxShadow: billingCycle === 'monthly' ? '0 2px 5px rgba(0,0,0,0.2)' : 'none'
+                fontSize: '0.95rem'
               }}
             >
               Mensal
@@ -116,8 +116,10 @@ export default function PricingPage() {
             <button 
               onClick={() => setBillingCycle('yearly')}
               style={{
-                padding: '10px 24px',
-                borderRadius: '100px',
+                margin: 0, // Reset crucial
+                boxSizing: 'border-box',
+                padding: '8px 24px', // Reduzido no eixo Y
+                borderRadius: '9999px',
                 border: 'none',
                 backgroundColor: billingCycle === 'yearly' ? '#7e22ce' : 'transparent',
                 color: billingCycle === 'yearly' ? '#fff' : '#9ca3af',
@@ -127,8 +129,7 @@ export default function PricingPage() {
                 fontSize: '0.95rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                boxShadow: billingCycle === 'yearly' ? '0 2px 10px rgba(126, 34, 206, 0.3)' : 'none'
+                gap: '8px'
               }}
             >
               Anual 
