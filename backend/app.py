@@ -320,7 +320,7 @@ def generate_spreadsheet():
 
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 8. UPLOAD PDF (RAG)
+# 8. UPLOAD PDF (SIMPLIFICADO E DIRETO)
 @app.route('/upload-document', methods=['POST'])
 def upload_document():
     try:
@@ -334,28 +334,28 @@ def upload_document():
 
         reader = PdfReader(file)
         text = ""
+        # Lê todas as páginas e junta num texto só
         for page in reader.pages: 
             extracted = page.extract_text()
             if extracted: text += extracted + "\n"
             
-        # PROTEÇÃO CONTRA PDF FANTASMA (IMAGENS/SCANS)
+        # Proteção contra PDF que é apenas Imagem/Foto
         if len(text.strip()) < 10:
-            return jsonify({'error': 'Erro: Este PDF parece ser uma imagem ou arquivo bloqueado. Envie um PDF com texto selecionável.'}), 400
+            return jsonify({'error': 'Este PDF é uma imagem ou não possui texto selecionável. Tente outro arquivo.'}), 400
         
-        doc = supabase.table('documents').insert({'user_id': user_id, 'filename': file.filename}).execute()
+        # SALVA O TEXTO INTEIRO DIRETO NO BANCO
+        doc = supabase.table('documents').insert({
+            'user_id': user_id, 
+            'filename': file.filename,
+            'content': text
+        }).execute()
+        
         doc_id = doc.data[0]['id']
 
-        chunks = [text[i:i+1000] for i in range(0, len(text), 1000)]
-        items = []
-        for c in chunks:
-            emb = get_embedding(c)
-            if emb: items.append({'document_id': doc_id, 'content': c, 'embedding': emb})
-        
-        if items: supabase.table('document_chunks').insert(items).execute()
         return jsonify({'message': 'OK', 'document_id': doc_id})
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 9. CHAT PDF (INTELIGENTE - LÊ O DOCUMENTO INTEIRO)
+# 9. CHAT PDF (INTELIGENTE - LÊ O DOCUMENTO TODO)
 @app.route('/ask-document', methods=['POST'])
 def ask_document():
     if not model: return jsonify({'error': 'Erro modelo'}), 500
@@ -363,35 +363,28 @@ def ask_document():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
 
-        # BLOQUEIO DE CRÉDITOS
         user_id = data.get('user_id')
         if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
-        s, m = check_and_deduct_credit(user_id)
-        if not s: return jsonify({'error': m}), 402
 
         question = data.get('question')
         document_id = data.get('document_id')
 
-        # Busca os pedaços do documento correto
+        # Busca o texto inteiro do documento
         if document_id:
-            chunks_response = supabase.table('document_chunks').select('content').eq('document_id', document_id).execute()
+            doc_response = supabase.table('documents').select('content').eq('id', document_id).execute()
         else:
-            # Fallback: pega o último documento que o usuário enviou
-            last_doc = supabase.table('documents').select('id').eq('user_id', user_id).order('created_at', desc=True).limit(1).execute()
-            if not last_doc.data:
-                return jsonify({'error': 'Nenhum documento encontrado. Faça o upload novamente.'}), 400
-            chunks_response = supabase.table('document_chunks').select('content').eq('document_id', last_doc.data[0]['id']).execute()
+            # Fallback: pega o último enviado
+            doc_response = supabase.table('documents').select('content').eq('user_id', user_id).order('created_at', desc=True).limit(1).execute()
 
-        if not chunks_response.data:
-             return jsonify({'error': 'O texto deste documento está vazio ou é uma imagem escaneada.'}), 400
+        if not doc_response.data or not doc_response.data[0].get('content'):
+             return jsonify({'error': 'Não foi possível encontrar o texto deste documento. Faça o upload novamente.'}), 400
 
-        # MAGIA AQUI: Em vez de buscar por similaridade (RAG), juntamos o PDF INTEIRO! 
-        # O Gemini 2.0 lê tudo de uma vez.
-        context = "\n".join([m['content'] for m in chunks_response.data])
+        context = doc_response.data[0]['content']
         
-        prompt = f"""Você é um assistente jurídico e analista de documentos super inteligente. 
-        Baseado ESTRITAMENTE no documento abaixo, responda à pergunta de forma direta e clara.
-        Se a informação não existir no documento, diga que não encontrou.
+        # Prompt Mestre
+        prompt = f"""Você é um analista de documentos e assistente jurídico altamente inteligente.
+        Leia TODO o documento fornecido abaixo e responda à pergunta do usuário de forma clara e precisa.
+        Se a informação solicitada não existir no documento, diga educadamente que não encontrou.
         
         DOCUMENTO:
         {context}
