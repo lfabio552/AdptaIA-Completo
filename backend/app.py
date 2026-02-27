@@ -334,7 +334,13 @@ def upload_document():
 
         reader = PdfReader(file)
         text = ""
-        for page in reader.pages: text += page.extract_text() + "\n"
+        for page in reader.pages: 
+            extracted = page.extract_text()
+            if extracted: text += extracted + "\n"
+            
+        # PROTEÇÃO CONTRA PDF FANTASMA (IMAGENS/SCANS)
+        if len(text.strip()) < 10:
+            return jsonify({'error': 'Erro: Este PDF parece ser uma imagem ou arquivo bloqueado. Envie um PDF com texto selecionável.'}), 400
         
         doc = supabase.table('documents').insert({'user_id': user_id, 'filename': file.filename}).execute()
         doc_id = doc.data[0]['id']
@@ -366,11 +372,19 @@ def ask_document():
         question = data.get('question')
         
         q_emb = get_embedding(question)
-        params = {'query_embedding': q_emb, 'match_threshold': 0.5, 'match_count': 5, 'user_id_filter': user_id}
-        matches = supabase.rpc('match_documents', params).execute().data
         
-        context = "\n".join([m['content'] for m in matches])
-        prompt = f"Contexto: {context}\nPergunta: {question}"
+        # BUSCA NO BANCO COM NOVO FILTRO (0.2)
+        params = {'query_embedding': q_emb, 'match_threshold': 0.2, 'match_count': 8, 'user_id_filter': user_id}
+        matches_response = supabase.rpc('match_documents', params).execute()
+        matches = matches_response.data
+        
+        # PROTEÇÃO CONTRA ALUCINAÇÃO DA IA
+        if not matches:
+             prompt = f"O usuário perguntou '{question}', mas não encontrei nenhuma informação com este assunto no PDF que ele enviou. Avise-o educadamente que a resposta não está no documento."
+        else:
+             context = "\n".join([m['content'] for m in matches])
+             prompt = f"Baseado ESTRITAMENTE no seguinte contexto extraído de um documento, responda à pergunta do usuário. Se não souber, diga que a info não está no documento.\n\nCONTEXTO DO DOCUMENTO:\n{context}\n\nPERGUNTA: {question}"
+             
         resp = model.generate_content(prompt)
         
         return jsonify({'answer': resp.text})
