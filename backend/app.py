@@ -527,7 +527,26 @@ def generate_cover_letter():
         s, m = check_and_deduct_credit(user_id)
         if not s: return jsonify({'error': m}), 402
         
-        prompt = f"Escreva Cover Letter para vaga '{data.get('job_desc')}' baseada no CV '{data.get('cv_text')}'."
+        # CORREÇÃO: Lendo as variáveis exatas que o Frontend envia!
+        job_description = data.get('job_description', '')
+        user_resume = data.get('user_resume', '')
+        
+        prompt = f"""Atue como um Especialista em RH e Redator de Carreiras de alto nível.
+        Sua tarefa é escrever uma Carta de Apresentação (Cover Letter) persuasiva, profissional e pronta para uso.
+        
+        Regras ESTRITAS:
+        1. NÃO converse comigo. NÃO faça perguntas. NÃO peça mais informações.
+        2. Escreva APENAS a carta de apresentação final e nada mais.
+        3. Se faltar algum dado (como nome da empresa, nome do recrutador), use placeholders como [Nome da Empresa], [Nome do Recrutador], etc.
+        4. Conecte de forma inteligente a experiência do candidato com o que a vaga pede.
+        
+        === DADOS DA VAGA ===
+        {job_description}
+        
+        === EXPERIÊNCIA DO CANDIDATO ===
+        {user_resume}
+        """
+        
         response = model.generate_content(prompt)
         return jsonify({'cover_letter': response.text})
     except Exception as e: return jsonify({'error': str(e)}), 500
