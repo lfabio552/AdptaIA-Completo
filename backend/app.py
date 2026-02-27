@@ -355,7 +355,7 @@ def upload_document():
         return jsonify({'message': 'OK', 'document_id': doc_id})
     except Exception as e: return jsonify({'error': str(e)}), 500
 
-# 9. CHAT PDF (RAG)
+# 9. CHAT PDF (INTELIGENTE - LÊ O DOCUMENTO INTEIRO)
 @app.route('/ask-document', methods=['POST'])
 def ask_document():
     if not model: return jsonify({'error': 'Erro modelo'}), 500
@@ -370,20 +370,33 @@ def ask_document():
         if not s: return jsonify({'error': m}), 402
 
         question = data.get('question')
-        
-        q_emb = get_embedding(question)
-        
-        # BUSCA NO BANCO COM NOVO FILTRO (0.2)
-        params = {'query_embedding': q_emb, 'match_threshold': 0.2, 'match_count': 8, 'user_id_filter': user_id}
-        matches_response = supabase.rpc('match_documents', params).execute()
-        matches = matches_response.data
-        
-        # PROTEÇÃO CONTRA ALUCINAÇÃO DA IA
-        if not matches:
-             prompt = f"O usuário perguntou '{question}', mas não encontrei nenhuma informação com este assunto no PDF que ele enviou. Avise-o educadamente que a resposta não está no documento."
+        document_id = data.get('document_id')
+
+        # Busca os pedaços do documento correto
+        if document_id:
+            chunks_response = supabase.table('document_chunks').select('content').eq('document_id', document_id).execute()
         else:
-             context = "\n".join([m['content'] for m in matches])
-             prompt = f"Baseado ESTRITAMENTE no seguinte contexto extraído de um documento, responda à pergunta do usuário. Se não souber, diga que a info não está no documento.\n\nCONTEXTO DO DOCUMENTO:\n{context}\n\nPERGUNTA: {question}"
+            # Fallback: pega o último documento que o usuário enviou
+            last_doc = supabase.table('documents').select('id').eq('user_id', user_id).order('created_at', desc=True).limit(1).execute()
+            if not last_doc.data:
+                return jsonify({'error': 'Nenhum documento encontrado. Faça o upload novamente.'}), 400
+            chunks_response = supabase.table('document_chunks').select('content').eq('document_id', last_doc.data[0]['id']).execute()
+
+        if not chunks_response.data:
+             return jsonify({'error': 'O texto deste documento está vazio ou é uma imagem escaneada.'}), 400
+
+        # MAGIA AQUI: Em vez de buscar por similaridade (RAG), juntamos o PDF INTEIRO! 
+        # O Gemini 2.0 lê tudo de uma vez.
+        context = "\n".join([m['content'] for m in chunks_response.data])
+        
+        prompt = f"""Você é um assistente jurídico e analista de documentos super inteligente. 
+        Baseado ESTRITAMENTE no documento abaixo, responda à pergunta de forma direta e clara.
+        Se a informação não existir no documento, diga que não encontrou.
+        
+        DOCUMENTO:
+        {context}
+        
+        PERGUNTA DO USUÁRIO: {question}"""
              
         resp = model.generate_content(prompt)
         

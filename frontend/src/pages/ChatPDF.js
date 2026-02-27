@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom'; // ADICIONADO PARA O POP-UP
+import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import config from '../config';
 import HistoryList from '../components/HistoryList';
@@ -22,7 +22,10 @@ export default function ChatPDF() {
   const [user, setUser] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  // ESTADO PARA O POP-UP DE CRÉDITOS
+  // NOVO: Controle inteligente de upload para não repetir envio do mesmo PDF
+  const [uploadedDocId, setUploadedDocId] = useState(null);
+  const [lastFileName, setLastFileName] = useState('');
+
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
@@ -61,11 +64,12 @@ export default function ChatPDF() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Faça login para continuar.');
-      
       if (!question) throw new Error('Digite uma pergunta.');
 
-      // 1. UPLOAD (SE TIVER ARQUIVO)
-      if (file) {
+      let currentDocId = uploadedDocId;
+
+      // SÓ FAZ UPLOAD SE FOR UM ARQUIVO NOVO
+      if (file && file.name !== lastFileName) {
         setStatus('⏳ Lendo PDF... (Isso pode levar alguns segundos)');
         
         const formData = new FormData();
@@ -73,13 +77,8 @@ export default function ChatPDF() {
         formData.append('user_id', user.id);
 
         const uploadUrl = config.ENDPOINTS.UPLOAD_DOCUMENT || `${config.API_BASE_URL}/upload-document`;
-        
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'POST',
-          body: formData,
-        });
+        const uploadResponse = await fetch(uploadUrl, { method: 'POST', body: formData });
 
-        // LÓGICA DE BLOQUEIO DE CRÉDITOS NO UPLOAD
         if (uploadResponse.status === 402) {
             setShowUpgradeModal(true);
             setIsLoading(false);
@@ -89,13 +88,21 @@ export default function ChatPDF() {
 
         if (!uploadResponse.ok) {
            const errData = await uploadResponse.json();
-           throw new Error(errData.error || 'Erro ao ler o PDF.');
+           throw new Error(errData.error || 'Erro ao ler o PDF. Certifique-se que ele tem texto selecionável.');
         }
         
+        const uploadData = await uploadResponse.json();
+        currentDocId = uploadData.document_id;
+        
+        // Salva para as próximas perguntas
+        setUploadedDocId(currentDocId);
+        setLastFileName(file.name);
         setStatus('✅ PDF processado! Analisando sua pergunta...');
+      } else if (!file && !currentDocId) {
+          throw new Error('Por favor, anexe um documento PDF primeiro.');
       }
 
-      setStatus('🤔 A IA está lendo o documento...');
+      setStatus('🤔 A IA está lendo o documento inteiro...');
       
       const askUrl = config.ENDPOINTS.ASK_DOCUMENT || `${config.API_BASE_URL}/ask-document`;
       
@@ -104,11 +111,11 @@ export default function ChatPDF() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: user.id,
-          question: question
+          question: question,
+          document_id: currentDocId // Enviando o ID exato para o backend não se perder
         }),
       });
 
-      // LÓGICA DE BLOQUEIO DE CRÉDITOS NA PERGUNTA
       if (response.status === 402) {
           setShowUpgradeModal(true);
           setIsLoading(false);
@@ -122,7 +129,6 @@ export default function ChatPDF() {
       setAnswer(data.answer);
       setStatus('');
 
-      // 3. HISTÓRICO
       try {
         await fetch(`${config.API_BASE_URL}/save-history`, {
           method: 'POST',
@@ -132,7 +138,7 @@ export default function ChatPDF() {
             tool_type: 'chat-pdf',
             input_data: question,
             output_data: data.answer,
-            metadata: { file_name: file ? file.name : 'Documento Carregado' }
+            metadata: { file_name: file ? file.name : lastFileName }
           })
         });
       } catch (histError) {
@@ -150,7 +156,7 @@ export default function ChatPDF() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      backgroundColor: '#0f1016', // Fundo Dark Puro
+      backgroundColor: '#0f1016', 
       color: 'white', 
       padding: '40px 20px', 
       fontFamily: "'Inter', sans-serif",
@@ -158,68 +164,36 @@ export default function ChatPDF() {
       overflow: 'hidden'
     }}>
       
-      {/* LUZ VERMELHA DE FUNDO SUTIL */}
       <div style={{
-        position: 'absolute',
-        top: '-150px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '600px',
-        height: '500px',
-        background: 'radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, rgba(15, 16, 22, 0) 70%)', // Vermelho
-        filter: 'blur(40px)',
-        zIndex: 0,
-        pointerEvents: 'none'
+        position: 'absolute', top: '-150px', left: '50%', transform: 'translateX(-50%)',
+        width: '600px', height: '500px',
+        background: 'radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, rgba(15, 16, 22, 0) 70%)', 
+        filter: 'blur(40px)', zIndex: 0, pointerEvents: 'none'
       }}></div>
 
-      {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
       <style>{`
-        .tool-grid {
-          display: grid;
-          gap: 40px;
-          grid-template-columns: 1fr;
-        }
-        
-        @media (min-width: 1024px) {
-          .tool-grid {
-            grid-template-columns: 1fr 1fr;
-            align-items: stretch; /* Garante altura igual */
-          }
-        }
-
-        /* Card base para garantir altura */
-        .tool-card {
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          box-sizing: border-box;
-        }
-        
-        /* Animação do Loader */
+        .tool-grid { display: grid; gap: 40px; grid-template-columns: 1fr; }
+        @media (min-width: 1024px) { .tool-grid { grid-template-columns: 1fr 1fr; align-items: stretch; } }
+        .tool-card { height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
         .loader { width: 16px; height: 16px; border: 2px solid #fbbf24; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
       `}</style>
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         
-        {/* CABEÇALHO */}
         <div style={{ textAlign: 'center', marginBottom: '50px' }}>
           <div style={{ 
              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-             background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)', // Vermelho PDF
+             background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
              width: '60px', height: '60px', borderRadius: '15px', marginBottom: '20px',
              boxShadow: '0 10px 30px -10px rgba(239, 68, 68, 0.5)'
           }}>
             <DocumentTextIcon style={{ width: '32px', color: 'white' }} />
           </div>
           <h1 style={{ 
-            fontSize: '2.5rem', 
-            fontWeight: '800', 
-            marginBottom: '10px',
+            fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px',
             background: 'linear-gradient(to right, #ffffff, #fca5a5, #ef4444)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
           }}>
             Chat com PDF (RAG)
           </h1>
@@ -228,20 +202,14 @@ export default function ChatPDF() {
           </p>
         </div>
 
-        {/* BOTÃO HISTÓRICO */}
         {user && (
           <div style={{ textAlign: 'center', marginBottom: '30px' }}>
             <button
               onClick={() => setShowHistory(!showHistory)}
               style={{
-                padding: '10px 20px',
-                backgroundColor: showHistory ? '#374151' : 'rgba(255,255,255,0.05)',
-                color: '#d1d5db',
-                border: '1px solid #374151',
-                borderRadius: '50px',
-                cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                fontSize: '0.9rem', fontWeight: '500'
+                padding: '10px 20px', backgroundColor: showHistory ? '#374151' : 'rgba(255,255,255,0.05)',
+                color: '#d1d5db', border: '1px solid #374151', borderRadius: '50px', cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', fontWeight: '500'
               }}
             >
               <SparklesIcon style={{ width: '16px' }} />
@@ -256,20 +224,14 @@ export default function ChatPDF() {
           </div>
         )}
 
-        {/* GRID PRINCIPAL */}
         <div className="tool-grid">
           
-          {/* LADO ESQUERDO: UPLOAD E PERGUNTA */}
           <div className="tool-card" style={{ 
-            backgroundColor: '#1f2937', 
-            padding: '30px', 
-            borderRadius: '20px', 
-            border: '1px solid #374151',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+            backgroundColor: '#1f2937', padding: '30px', borderRadius: '20px', 
+            border: '1px solid #374151', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
           }}>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}>
               
-              {/* UPLOAD AREA */}
               <div style={{ marginBottom: '30px' }}>
                 <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
                   1. Carregue seu PDF:
@@ -277,14 +239,9 @@ export default function ChatPDF() {
                 <div 
                   onClick={() => document.getElementById('pdf-upload').click()}
                   style={{
-                    border: '2px dashed #4b5563',
-                    borderRadius: '12px',
-                    padding: '30px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
+                    border: '2px dashed #4b5563', borderRadius: '12px', padding: '30px', textAlign: 'center', cursor: 'pointer',
                     backgroundColor: file ? 'rgba(6, 78, 59, 0.3)' : 'rgba(255,255,255,0.02)',
-                    borderColor: file ? '#10b981' : '#4b5563',
-                    transition: 'all 0.2s'
+                    borderColor: file ? '#10b981' : '#4b5563', transition: 'all 0.2s'
                   }}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                   onMouseOut={(e) => e.currentTarget.style.backgroundColor = file ? 'rgba(6, 78, 59, 0.3)' : 'rgba(255,255,255,0.02)'}
@@ -298,21 +255,18 @@ export default function ChatPDF() {
                   ) : (
                     <div>
                       <p style={{ color: '#d1d5db' }}>Clique para selecionar</p>
-                      <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>Suporta arquivos PDF até 10MB</p>
+                      <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>Suporta arquivos PDF com texto selecionável</p>
                     </div>
                   )}
                   <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileChange}
-                    style={{ display: 'none' }}
-                    id="pdf-upload"
+                    type="file" accept=".pdf" onChange={handleFileChange}
+                    style={{ display: 'none' }} id="pdf-upload"
                   />
                 </div>
                 {file && (
                   <button 
                     type="button" 
-                    onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                    onClick={(e) => { e.stopPropagation(); setFile(null); setUploadedDocId(null); setLastFileName(''); }}
                     style={{ marginTop: '10px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}
                   >
                     <TrashIcon style={{width: '14px'}}/> Remover arquivo
@@ -320,7 +274,6 @@ export default function ChatPDF() {
                 )}
               </div>
 
-              {/* PERGUNTA */}
               <div style={{ marginBottom: '25px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <label style={{ display: 'block', marginBottom: '10px', fontSize: '1rem', fontWeight: '600', color: '#e5e7eb' }}>
                   2. O que você quer saber?
@@ -328,35 +281,21 @@ export default function ChatPDF() {
                 <textarea
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="Ex: Qual é a conclusão principal do autor? Resuma os pontos chave..."
+                  placeholder="Ex: Qual o nome do outorgante do documento? Resume as obrigações..."
                   required
                   style={{
-                    width: '100%',
-                    flexGrow: 1, // Faz crescer para preencher espaço
-                    minHeight: '150px',
-                    padding: '15px',
-                    borderRadius: '12px',
-                    backgroundColor: '#111827',
-                    color: 'white',
-                    border: '1px solid #4b5563',
-                    fontSize: '1rem',
-                    lineHeight: '1.5',
-                    resize: 'none',
-                    boxSizing: 'border-box'
+                    width: '100%', flexGrow: 1, minHeight: '150px', padding: '15px', borderRadius: '12px',
+                    backgroundColor: '#111827', color: 'white', border: '1px solid #4b5563',
+                    fontSize: '1rem', lineHeight: '1.5', resize: 'none', boxSizing: 'border-box'
                   }}
                 />
               </div>
 
               {status && (
                 <div style={{ 
-                  marginBottom: '20px', 
-                  padding: '10px', 
-                  backgroundColor: 'rgba(251, 191, 36, 0.1)', 
-                  border: '1px solid rgba(251, 191, 36, 0.3)',
-                  borderRadius: '8px',
-                  color: '#fbbf24', 
-                  fontSize: '0.9rem',
-                  display: 'flex', alignItems: 'center', gap: '8px'
+                  marginBottom: '20px', padding: '10px', backgroundColor: 'rgba(251, 191, 36, 0.1)', 
+                  border: '1px solid rgba(251, 191, 36, 0.3)', borderRadius: '8px', color: '#fbbf24', 
+                  fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px'
                 }}>
                   <span className="loader"></span> {status}
                 </div>
@@ -366,18 +305,10 @@ export default function ChatPDF() {
                 type="submit"
                 disabled={isLoading}
                 style={{
-                  marginTop: 'auto', // Empurra para o fundo
-                  width: '100%',
-                  padding: '16px',
-                  background: 'linear-gradient(90deg, #ef4444 0%, #b91c1c 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontWeight: 'bold',
-                  cursor: isLoading ? 'wait' : 'pointer',
-                  fontSize: '1.1rem',
-                  opacity: isLoading ? 0.7 : 1,
-                  boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
+                  marginTop: 'auto', width: '100%', padding: '16px',
+                  background: 'linear-gradient(90deg, #ef4444 0%, #b91c1c 100%)', color: 'white', border: 'none',
+                  borderRadius: '12px', fontWeight: 'bold', cursor: isLoading ? 'wait' : 'pointer',
+                  fontSize: '1.1rem', opacity: isLoading ? 0.7 : 1, boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)',
                   transition: 'transform 0.1s'
                 }}
               >
@@ -392,33 +323,18 @@ export default function ChatPDF() {
             </form>
           </div>
 
-          {/* LADO DIREITO: RESPOSTA */}
           <div className="tool-card" style={{ 
-            backgroundColor: '#1f2937', 
-            padding: '30px', 
-            borderRadius: '20px', 
-            border: '1px solid #ef4444', 
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '400px' // Altura mínima de segurança
+            backgroundColor: '#1f2937', padding: '30px', borderRadius: '20px', border: '1px solid #ef4444', 
+            display: 'flex', flexDirection: 'column', minHeight: '400px' 
           }}>
             <h3 style={{ color: '#fca5a5', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <ChatBubbleLeftRightIcon style={{ width: '24px' }} /> Resposta da IA:
             </h3>
             
             <div style={{ 
-              flexGrow: 1, // Preenche todo o espaço vertical disponível
-              backgroundColor: '#111827', 
-              padding: '20px', 
-              borderRadius: '12px',
-              fontFamily: "'Inter', sans-serif",
-              fontSize: '1rem',
-              color: '#d1d5db',
-              lineHeight: '1.7',
-              whiteSpace: 'pre-wrap',
-              border: '1px solid #374151',
-              display: 'flex',
-              flexDirection: 'column'
+              flexGrow: 1, backgroundColor: '#111827', padding: '20px', borderRadius: '12px',
+              fontFamily: "'Inter', sans-serif", fontSize: '1.05rem', color: '#e5e7eb', lineHeight: '1.7',
+              whiteSpace: 'pre-wrap', border: '1px solid #374151', display: 'flex', flexDirection: 'column'
             }}>
               {answer ? (
                 <span>{answer}</span>
@@ -436,17 +352,14 @@ export default function ChatPDF() {
         <ExemplosSection ferramentaId="chat-pdf" />
       </div>
 
-      {/* MODAL DE CRÉDITOS ESGOTADOS */}
       {showUpgradeModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.85)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 1000, backdropFilter: 'blur(8px)'
         }}>
           <div style={{
-            backgroundColor: '#1f2937', padding: '40px', borderRadius: '24px',
-            maxWidth: '420px', width: '90%', textAlign: 'center',
+            backgroundColor: '#1f2937', padding: '40px', borderRadius: '24px', maxWidth: '420px', width: '90%', textAlign: 'center',
             border: '1px solid #ef4444', boxShadow: '0 10px 50px rgba(239, 68, 68, 0.3)'
           }}>
             <div style={{ fontSize: '4rem', marginBottom: '10px' }}>🪙</div>
@@ -466,10 +379,7 @@ export default function ChatPDF() {
             </Link>
             <button 
               onClick={() => setShowUpgradeModal(false)} 
-              style={{
-                background: 'transparent', border: 'none', color: '#9ca3af',
-                cursor: 'pointer', fontSize: '0.95rem', textDecoration: 'underline'
-              }}
+              style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '0.95rem', textDecoration: 'underline' }}
             >
               Voltar para a ferramenta
             </button>
