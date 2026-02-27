@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // ADICIONADO PARA O POP-UP
 import { supabase } from '../supabaseClient';
 import config from '../config';
 import HistoryList from '../components/HistoryList';
@@ -20,6 +21,9 @@ export default function ChatPDF() {
   const [error, setError] = useState('');
   const [user, setUser] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
+
+  // ESTADO PARA O POP-UP DE CRÉDITOS
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
@@ -75,6 +79,14 @@ export default function ChatPDF() {
           body: formData,
         });
 
+        // LÓGICA DE BLOQUEIO DE CRÉDITOS NO UPLOAD
+        if (uploadResponse.status === 402) {
+            setShowUpgradeModal(true);
+            setIsLoading(false);
+            setStatus('');
+            return;
+        }
+
         if (!uploadResponse.ok) {
            const errData = await uploadResponse.json();
            throw new Error(errData.error || 'Erro ao ler o PDF.');
@@ -95,6 +107,14 @@ export default function ChatPDF() {
           question: question
         }),
       });
+
+      // LÓGICA DE BLOQUEIO DE CRÉDITOS NA PERGUNTA
+      if (response.status === 402) {
+          setShowUpgradeModal(true);
+          setIsLoading(false);
+          setStatus('');
+          return;
+      }
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Erro ao gerar resposta.');
@@ -130,13 +150,28 @@ export default function ChatPDF() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      // MUDANÇA: Gradiente Vermelho no fundo
-      background: 'radial-gradient(circle at 50% 0%, rgba(239, 68, 68, 0.15) 0%, #0f1016 60%)',
+      backgroundColor: '#0f1016', // Fundo Dark Puro
       color: 'white', 
       padding: '40px 20px', 
-      fontFamily: "'Inter', sans-serif" 
+      fontFamily: "'Inter', sans-serif",
+      position: 'relative',
+      overflow: 'hidden'
     }}>
       
+      {/* LUZ VERMELHA DE FUNDO SUTIL */}
+      <div style={{
+        position: 'absolute',
+        top: '-150px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '600px',
+        height: '500px',
+        background: 'radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, rgba(15, 16, 22, 0) 70%)', // Vermelho
+        filter: 'blur(40px)',
+        zIndex: 0,
+        pointerEvents: 'none'
+      }}></div>
+
       {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
       <style>{`
         .tool-grid {
@@ -165,7 +200,7 @@ export default function ChatPDF() {
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
       `}</style>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         
         {/* CABEÇALHO */}
         <div style={{ textAlign: 'center', marginBottom: '50px' }}>
@@ -181,7 +216,6 @@ export default function ChatPDF() {
             fontSize: '2.5rem', 
             fontWeight: '800', 
             marginBottom: '10px',
-            // MUDANÇA: Gradiente no texto do título
             background: 'linear-gradient(to right, #ffffff, #fca5a5, #ef4444)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -401,6 +435,48 @@ export default function ChatPDF() {
 
         <ExemplosSection ferramentaId="chat-pdf" />
       </div>
+
+      {/* MODAL DE CRÉDITOS ESGOTADOS */}
+      {showUpgradeModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, backdropFilter: 'blur(8px)'
+        }}>
+          <div style={{
+            backgroundColor: '#1f2937', padding: '40px', borderRadius: '24px',
+            maxWidth: '420px', width: '90%', textAlign: 'center',
+            border: '1px solid #ef4444', boxShadow: '0 10px 50px rgba(239, 68, 68, 0.3)'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '10px' }}>🪙</div>
+            <h2 style={{ color: 'white', marginBottom: '15px', fontSize: '1.8rem', fontWeight: '800' }}>
+              Créditos Esgotados!
+            </h2>
+            <p style={{ color: '#9ca3af', marginBottom: '30px', fontSize: '1.05rem', lineHeight: '1.5' }}>
+              Você atingiu o limite do plano gratuito. Assine o <strong>Plano PRO</strong> para criar sem limites e ter acesso a todas as ferramentas premium.
+            </p>
+            <Link to="/precos" style={{
+              display: 'block', width: '100%', padding: '16px', boxSizing: 'border-box',
+              background: 'linear-gradient(90deg, #ef4444 0%, #b91c1c 100%)', color: 'white',
+              borderRadius: '12px', fontWeight: 'bold', textDecoration: 'none',
+              marginBottom: '15px', fontSize: '1.1rem', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)'
+            }}>
+              Ver Planos PRO 🚀
+            </Link>
+            <button 
+              onClick={() => setShowUpgradeModal(false)} 
+              style={{
+                background: 'transparent', border: 'none', color: '#9ca3af',
+                cursor: 'pointer', fontSize: '0.95rem', textDecoration: 'underline'
+              }}
+            >
+              Voltar para a ferramenta
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
