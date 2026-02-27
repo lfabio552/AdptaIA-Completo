@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // ADICIONADO PARA O POP-UP
 import { supabase } from '../supabaseClient';
 import ExemplosSection from '../components/ExemplosSection';
-import { saveHistoryItem } from '../utils/history'; // Mantendo sua importação original
+import { saveHistoryItem } from '../utils/history'; 
 import HistoryList from '../components/HistoryList';
 import config from '../config';
 import { 
@@ -21,6 +22,9 @@ export default function AgenteABNT() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [user, setUser] = useState(null);
+
+  // ESTADO PARA O POP-UP DE CRÉDITOS
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Obter usuário
   useEffect(() => {
@@ -68,9 +72,14 @@ export default function AgenteABNT() {
         }),
       });
 
-      const data = await response.json();
+      // LÓGICA DE BLOQUEIO DE CRÉDITOS (Erro 402)
+      if (response.status === 402) {
+        setShowUpgradeModal(true);
+        setIsLoading(false);
+        return;
+      }
 
-      if (response.status === 402) throw new Error(data.error);
+      const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Erro ao formatar.');
 
       setFormattedText(data.formatted_text);
@@ -137,13 +146,28 @@ export default function AgenteABNT() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      // MUDANÇA: Gradiente Azul Acadêmico no fundo
-      background: 'radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.15) 0%, #0f1016 60%)',
+      backgroundColor: '#0f1016', // Fundo Totalmente Escuro
       color: 'white', 
       padding: '40px 20px', 
-      fontFamily: "'Inter', sans-serif" 
+      fontFamily: "'Inter', sans-serif",
+      position: 'relative',
+      overflow: 'hidden'
     }}>
       
+      {/* LUZ AZUL DE FUNDO SUTIL */}
+      <div style={{
+        position: 'absolute',
+        top: '-150px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '600px',
+        height: '500px',
+        background: 'radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, rgba(15, 16, 22, 0) 70%)', // Azul Acadêmico
+        filter: 'blur(40px)',
+        zIndex: 0,
+        pointerEvents: 'none'
+      }}></div>
+
       {/* CSS RESPONSIVO PARA ALINHAMENTO PERFEITO */}
       <style>{`
         .tool-grid {
@@ -168,7 +192,7 @@ export default function AgenteABNT() {
         }
       `}</style>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         
         {/* CABEÇALHO */}
         <div style={{ textAlign: 'center', marginBottom: '50px' }}>
@@ -184,7 +208,6 @@ export default function AgenteABNT() {
             fontSize: '2.5rem', 
             fontWeight: '800', 
             marginBottom: '10px',
-            // MUDANÇA: Gradiente no texto
             background: 'linear-gradient(to right, #ffffff, #60a5fa, #2563eb)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -269,7 +292,7 @@ export default function AgenteABNT() {
                   style={{
                     width: '100%',
                     padding: '16px',
-                    background: 'linear-gradient(90deg, #2563eb 0%, #4f46e5 100%)',
+                    background: 'linear-gradient(90deg, #2563eb 0%, #4f46e5 100%)', // Azul
                     color: 'white',
                     border: 'none',
                     borderRadius: '12px',
@@ -387,6 +410,48 @@ export default function AgenteABNT() {
 
         <ExemplosSection ferramentaId="agente-abnt" />
       </div>
+
+      {/* MODAL DE CRÉDITOS ESGOTADOS */}
+      {showUpgradeModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, backdropFilter: 'blur(8px)'
+        }}>
+          <div style={{
+            backgroundColor: '#1f2937', padding: '40px', borderRadius: '24px',
+            maxWidth: '420px', width: '90%', textAlign: 'center',
+            border: '1px solid #2563eb', boxShadow: '0 10px 50px rgba(37, 99, 235, 0.3)'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '10px' }}>🪙</div>
+            <h2 style={{ color: 'white', marginBottom: '15px', fontSize: '1.8rem', fontWeight: '800' }}>
+              Créditos Esgotados!
+            </h2>
+            <p style={{ color: '#9ca3af', marginBottom: '30px', fontSize: '1.05rem', lineHeight: '1.5' }}>
+              Você atingiu o limite do plano gratuito. Assine o <strong>Plano PRO</strong> para criar sem limites e ter acesso a todas as ferramentas premium.
+            </p>
+            <Link to="/precos" style={{
+              display: 'block', width: '100%', padding: '16px', boxSizing: 'border-box',
+              background: 'linear-gradient(90deg, #2563eb 0%, #4f46e5 100%)', color: 'white',
+              borderRadius: '12px', fontWeight: 'bold', textDecoration: 'none',
+              marginBottom: '15px', fontSize: '1.1rem', boxShadow: '0 4px 15px rgba(37, 99, 235, 0.4)'
+            }}>
+              Ver Planos PRO 🚀
+            </Link>
+            <button 
+              onClick={() => setShowUpgradeModal(false)} 
+              style={{
+                background: 'transparent', border: 'none', color: '#9ca3af',
+                cursor: 'pointer', fontSize: '0.95rem', textDecoration: 'underline'
+              }}
+            >
+              Voltar para a ferramenta
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
