@@ -122,7 +122,7 @@ export default function SocialMediaGenerator() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      backgroundColor: '#0f1016', // Fundo Dark Sólido e Puro
+      backgroundColor: '#0f1016', // Fundo Preto Sólido Puro
       backgroundImage: 'none', // FORÇA A REMOÇÃO DO DEGRADÊ ANTIGO
       color: 'white', 
       padding: '40px 20px', 
@@ -131,7 +131,7 @@ export default function SocialMediaGenerator() {
       overflow: 'hidden'
     }}>
       
-      {/* LUZ ROXA/ROSA CONCENTRADA APENAS NO TOPO */}
+      {/* LUZ ROXA/ROSA CONCENTRADA APENAS ATRÁS DO TÍTULO */}
       <div style={{
         position: 'absolute',
         top: '-150px',
@@ -139,7 +139,7 @@ export default function SocialMediaGenerator() {
         transform: 'translateX(-50%)',
         width: '500px',
         height: '400px',
-        background: 'radial-gradient(circle, rgba(217, 70, 239, 0.12) 0%, rgba(15, 16, 22, 0) 70%)',
+        background: 'radial-gradient(circle, rgba(217, 70, 239, 0.12) 0%, rgba(15, 16, 22, 0) 70%)', // Rosa/Roxo Concentrado
         filter: 'blur(50px)',
         zIndex: 0,
         pointerEvents: 'none'
@@ -252,7 +252,7 @@ export default function SocialMediaGenerator() {
                   style={{
                     width: '100%',
                     flexGrow: 1,
-                    minHeight: '200px', // Altura mínima um pouco maior
+                    minHeight: '200px',
                     padding: '15px',
                     borderRadius: '12px',
                     backgroundColor: '#111827',
