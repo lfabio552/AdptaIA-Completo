@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom'; // ADICIONADO PARA O POP-UP
+import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import config from '../config';
 import HistoryList from '../components/HistoryList';
@@ -109,7 +109,6 @@ export default function InterviewSimulator() {
     }
   };
 
-  // Estilo compartilhado para inputs
   const inputStyle = {
     width: '100%', 
     height: '50px', 
@@ -136,7 +135,8 @@ export default function InterviewSimulator() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      backgroundColor: '#0f1016', // Fundo Dark Puro
+      backgroundColor: '#0f1016', // Fundo Dark Sólido e Puro
+      backgroundImage: 'none', // FORÇA A REMOÇÃO DO DEGRADÊ ANTIGO
       color: 'white', 
       padding: '40px 20px', 
       fontFamily: "'Inter', sans-serif",
@@ -144,16 +144,16 @@ export default function InterviewSimulator() {
       overflow: 'hidden'
     }}>
       
-      {/* LUZ VERDE DE FUNDO */}
+      {/* LUZ VERDE CONCENTRADA APENAS NO TOPO */}
       <div style={{
         position: 'absolute',
         top: '-150px',
         left: '50%',
         transform: 'translateX(-50%)',
-        width: '600px',
-        height: '500px',
-        background: 'radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(15, 16, 22, 0) 70%)', // Verde
-        filter: 'blur(40px)',
+        width: '500px',
+        height: '400px',
+        background: 'radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(15, 16, 22, 0) 70%)',
+        filter: 'blur(50px)',
         zIndex: 0,
         pointerEvents: 'none'
       }}></div>
@@ -169,7 +169,7 @@ export default function InterviewSimulator() {
         @media (min-width: 1024px) {
           .tool-grid {
             grid-template-columns: 1fr 1fr;
-            grid-auto-rows: 1fr; /* Altura igual */
+            grid-auto-rows: 1fr;
           }
         }
 
@@ -178,6 +178,8 @@ export default function InterviewSimulator() {
           display: flex;
           flex-direction: column;
           box-sizing: border-box;
+          position: relative;
+          z-index: 1;
         }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -320,7 +322,7 @@ export default function InterviewSimulator() {
                   style={{ 
                     width: '100%', 
                     flexGrow: 1, 
-                    minHeight: '200px', // Altura mínima confortável
+                    minHeight: '200px', 
                     padding: '15px', 
                     borderRadius: '10px', 
                     backgroundColor: '#111827', 
@@ -449,7 +451,6 @@ export default function InterviewSimulator() {
         <ExemplosSection ferramentaId="interview-simulator" />
       </div>
 
-      {/* MODAL DE CRÉDITOS ESGOTADOS */}
       {showUpgradeModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
