@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { useNavigate, Link } from 'react-router-dom'; // Link adicionado para o botão de planos
+import { useNavigate, Link } from 'react-router-dom';
 import config from '../config'; 
 import { 
   UserCircleIcon, 
@@ -13,34 +13,36 @@ import {
   BoltIcon
 } from '@heroicons/react/24/solid';
 
-// Componente para animar os números
-const AnimatedNumber = ({ value, duration = 1500, prefix = "", suffix = "" }) => {
+// COMPONENTE ANIMADO CORRIGIDO (Agora suporta decimais e valores reais!)
+const AnimatedNumber = ({ value, duration = 1500, prefix = "", suffix = "", decimals = 0 }) => {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
     let start = 0;
-    const end = parseInt(value, 10) || 0;
+    const end = parseFloat(value) || 0;
     if (start === end) {
         setCount(end);
         return;
     }
 
-    let totalFrame = duration / (1000 / 60);
-    let increment = (end - start) / totalFrame;
+    let totalFrames = Math.round(duration / 16.66);
+    let increment = (end - start) / totalFrames;
+    
+    let current = start;
     let timer = setInterval(() => {
-      start += increment;
-      if (start >= end) {
+      current += increment;
+      if (current >= end) {
         clearInterval(timer);
         setCount(end);
       } else {
-        setCount(Math.floor(start));
+        setCount(current);
       }
-    }, 1000 / 60);
+    }, 16.66);
 
     return () => clearInterval(timer);
   }, [value, duration]);
 
-  return <span>{prefix}{count}{suffix}</span>;
+  return <span>{prefix}{count.toFixed(decimals).replace('.', ',')}{suffix}</span>;
 };
 
 export default function UserProfile() {
@@ -83,7 +85,7 @@ export default function UserProfile() {
           setCredits(profileData.credits);
       }
 
-      // 2. Busca o Histórico de uso para as métricas
+      // 2. Busca o Histórico de uso para calcular as Conquistas
       const { data: history, error } = await supabase
         .from('history')
         .select('id')
@@ -91,10 +93,12 @@ export default function UserProfile() {
 
       if (!error && history) {
         const totalUses = history.length;
-        // Lógica de gamificação:
-        // Ex: Cada ferramenta usada salva em média 30 min (0.5h)
-        const timeSaved = Math.floor(totalUses * 0.5); 
-        // Ex: O usuário pagaria R$ 35,00 para um humano fazer cada uma dessas tarefas
+        
+        // MATEMÁTICA DAS CONQUISTAS:
+        // Ex: Cada ferramenta usada salva em média 30 min (0.5 horas)
+        const timeSaved = totalUses * 0.5; 
+        
+        // Ex: O usuário pagaria R$ 35,00 para um humano fazer essa tarefa
         const valueGenerated = totalUses * 35; 
         
         setStats({ totalUses, timeSaved, valueGenerated });
@@ -111,7 +115,6 @@ export default function UserProfile() {
     navigate('/');
   };
 
-  // --- LÓGICA REAL: GERENCIAR ASSINATURA ---
   const handleManageSubscription = async () => {
     setIsProcessing(true);
     try {
@@ -145,7 +148,6 @@ export default function UserProfile() {
     }
   };
 
-  // --- LÓGICA REAL: EXCLUIR CONTA ---
   const handleDeleteAccount = async () => {
     const confirmText = prompt("Para confirmar a exclusão, digite 'DELETAR' abaixo. Isso apagará todos os seus dados permanentemente.");
     
@@ -153,7 +155,6 @@ export default function UserProfile() {
       setIsProcessing(true);
       try {
         const { error } = await supabase.rpc('delete_user'); 
-        
         if (error) throw error;
 
         await supabase.auth.signOut();
@@ -249,27 +250,33 @@ export default function UserProfile() {
           gap: '20px',
           marginBottom: '50px'
         }}>
-          {/* Card 1 */}
+          {/* Card 1: Usos */}
           <div style={{ background: 'linear-gradient(145deg, #1f2937 0%, #111827 100%)', padding: '25px', borderRadius: '20px', border: '1px solid #374151', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '80px', height: '80px', background: '#8b5cf6', borderRadius: '50%', filter: 'blur(40px)', opacity: 0.2 }}></div>
             <SparklesIcon style={{ width: '30px', color: '#a78bfa', marginBottom: '10px' }} />
-            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff' }}><AnimatedNumber value={stats.totalUses} /></div>
+            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff' }}>
+                <AnimatedNumber value={stats.totalUses} />
+            </div>
             <div style={{ color: '#9ca3af', fontSize: '0.9rem' }}>Ferramentas utilizadas</div>
           </div>
 
-          {/* Card 2 */}
+          {/* Card 2: Tempo Poupado (Com decimal) */}
           <div style={{ background: 'linear-gradient(145deg, #1f2937 0%, #111827 100%)', padding: '25px', borderRadius: '20px', border: '1px solid #374151', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '80px', height: '80px', background: '#10b981', borderRadius: '50%', filter: 'blur(40px)', opacity: 0.2 }}></div>
             <ClockIcon style={{ width: '30px', color: '#34d399', marginBottom: '10px' }} />
-            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff' }}><AnimatedNumber value={stats.timeSaved} suffix="h" /></div>
+            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff' }}>
+                <AnimatedNumber value={stats.timeSaved} suffix="h" decimals={1} />
+            </div>
             <div style={{ color: '#9ca3af', fontSize: '0.9rem' }}>Estimativa de tempo poupado</div>
           </div>
 
-          {/* Card 3 */}
+          {/* Card 3: Valor Gerado (Formato Dinheiro) */}
           <div style={{ background: 'linear-gradient(145deg, #1f2937 0%, #111827 100%)', padding: '25px', borderRadius: '20px', border: '1px solid #374151', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '80px', height: '80px', background: '#f59e0b', borderRadius: '50%', filter: 'blur(40px)', opacity: 0.2 }}></div>
             <CurrencyDollarIcon style={{ width: '30px', color: '#fbbf24', marginBottom: '10px' }} />
-            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff' }}><AnimatedNumber value={stats.valueGenerated} prefix="R$ " /></div>
+            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff' }}>
+                <AnimatedNumber value={stats.valueGenerated} prefix="R$ " decimals={2} />
+            </div>
             <div style={{ color: '#9ca3af', fontSize: '0.9rem' }}>Valor gerado / economizado</div>
           </div>
         </div>
