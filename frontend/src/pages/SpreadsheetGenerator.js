@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom'; // ADICIONADO PARA O POP-UP
 import { saveAs } from 'file-saver';
 import { supabase } from '../supabaseClient';
 import config from '../config';
@@ -18,6 +19,9 @@ export default function SpreadsheetGenerator() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [user, setUser] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
+
+  // ESTADO PARA O POP-UP DE CRÉDITOS
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
@@ -63,6 +67,13 @@ export default function SpreadsheetGenerator() {
         }),
       });
 
+      // LÓGICA DE BLOQUEIO DE CRÉDITOS (Erro 402)
+      if (response.status === 402) {
+        setShowUpgradeModal(true);
+        setIsLoading(false);
+        return;
+      }
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Erro ao gerar planilha.');
@@ -99,12 +110,29 @@ export default function SpreadsheetGenerator() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: 'radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.15) 0%, #0f1016 60%)',
+      backgroundColor: '#0f1016', // Fundo Dark Sólido e Puro
+      backgroundImage: 'none', // FORÇA A REMOÇÃO DO DEGRADÊ ANTIGO
       color: 'white', 
       padding: '40px 20px', 
-      fontFamily: "'Inter', sans-serif" 
+      fontFamily: "'Inter', sans-serif",
+      position: 'relative',
+      overflow: 'hidden'
     }}>
       
+      {/* LUZ VERDE CONCENTRADA APENAS NO TOPO */}
+      <div style={{
+        position: 'absolute',
+        top: '-150px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '500px',
+        height: '400px',
+        background: 'radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(15, 16, 22, 0) 70%)', // Verde
+        filter: 'blur(50px)',
+        zIndex: 0,
+        pointerEvents: 'none'
+      }}></div>
+
       <style>{`
         .tool-grid {
           display: grid;
@@ -127,6 +155,8 @@ export default function SpreadsheetGenerator() {
           display: flex;
           flex-direction: column;
           box-sizing: border-box; /* Importante para o padding não estourar */
+          position: relative;
+          z-index: 1;
         }
         
         /* Animações */
@@ -135,7 +165,7 @@ export default function SpreadsheetGenerator() {
         @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
       `}</style>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         
         {/* CABEÇALHO */}
         <div style={{ textAlign: 'center', marginBottom: '50px' }}>
@@ -346,6 +376,48 @@ export default function SpreadsheetGenerator() {
         {/* EXEMPLOS */}
         <ExemplosSection ferramentaId="gerador-planilha" />
       </div>
+
+      {/* MODAL DE CRÉDITOS ESGOTADOS */}
+      {showUpgradeModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, backdropFilter: 'blur(8px)'
+        }}>
+          <div style={{
+            backgroundColor: '#1f2937', padding: '40px', borderRadius: '24px',
+            maxWidth: '420px', width: '90%', textAlign: 'center',
+            border: '1px solid #10b981', boxShadow: '0 10px 50px rgba(16, 185, 129, 0.3)'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '10px' }}>🪙</div>
+            <h2 style={{ color: 'white', marginBottom: '15px', fontSize: '1.8rem', fontWeight: '800' }}>
+              Créditos Esgotados!
+            </h2>
+            <p style={{ color: '#9ca3af', marginBottom: '30px', fontSize: '1.05rem', lineHeight: '1.5' }}>
+              Você atingiu o limite do plano gratuito. Assine o <strong>Plano PRO</strong> para criar sem limites e ter acesso a todas as ferramentas premium.
+            </p>
+            <Link to="/precos" style={{
+              display: 'block', width: '100%', padding: '16px', boxSizing: 'border-box',
+              background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)', color: 'white',
+              borderRadius: '12px', fontWeight: 'bold', textDecoration: 'none',
+              marginBottom: '15px', fontSize: '1.1rem', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)'
+            }}>
+              Ver Planos PRO 🚀
+            </Link>
+            <button 
+              onClick={() => setShowUpgradeModal(false)} 
+              style={{
+                background: 'transparent', border: 'none', color: '#9ca3af',
+                cursor: 'pointer', fontSize: '0.95rem', textDecoration: 'underline'
+              }}
+            >
+              Voltar para a ferramenta
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
