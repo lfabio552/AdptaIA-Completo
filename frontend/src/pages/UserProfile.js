@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { useNavigate } from 'react-router-dom';
-import config from '../config'; // Importando config para pegar a URL da API
+import { useNavigate, Link } from 'react-router-dom'; // Link adicionado para o botão de planos
+import config from '../config'; 
 import { 
   UserCircleIcon, 
   CreditCardIcon, 
@@ -14,13 +14,16 @@ import {
 } from '@heroicons/react/24/solid';
 
 // Componente para animar os números
-const AnimatedNumber = ({ value, duration = 1500 }) => {
+const AnimatedNumber = ({ value, duration = 1500, prefix = "", suffix = "" }) => {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
     let start = 0;
-    const end = parseInt(value, 10);
-    if (start === end) return;
+    const end = parseInt(value, 10) || 0;
+    if (start === end) {
+        setCount(end);
+        return;
+    }
 
     let totalFrame = duration / (1000 / 60);
     let increment = (end - start) / totalFrame;
@@ -37,18 +40,22 @@ const AnimatedNumber = ({ value, duration = 1500 }) => {
     return () => clearInterval(timer);
   }, [value, duration]);
 
-  return <span>{count}</span>;
+  return <span>{prefix}{count}{suffix}</span>;
 };
 
 export default function UserProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false); // Novo estado para loading de botão
+  const [isProcessing, setIsProcessing] = useState(false); 
+  
+  // DADOS REAIS DO BANCO
+  const [isPro, setIsPro] = useState(false);
+  const [credits, setCredits] = useState(0);
   const [stats, setStats] = useState({
     totalUses: 0,
     timeSaved: 0, 
-    creditsSaved: 0
+    valueGenerated: 0
   });
 
   useEffect(() => {
@@ -64,6 +71,19 @@ export default function UserProfile() {
       }
       setUser(user);
 
+      // 1. Busca status PRO e Créditos na tabela 'profiles'
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('is_pro, credits')
+        .eq('id', user.id)
+        .single();
+        
+      if (profileData) {
+          setIsPro(profileData.is_pro);
+          setCredits(profileData.credits);
+      }
+
+      // 2. Busca o Histórico de uso para as métricas
       const { data: history, error } = await supabase
         .from('history')
         .select('id')
@@ -71,9 +91,13 @@ export default function UserProfile() {
 
       if (!error && history) {
         const totalUses = history.length;
-        const timeSaved = Math.floor((totalUses * 20) / 60); 
-        const creditsSaved = totalUses * 5; 
-        setStats({ totalUses, timeSaved, creditsSaved });
+        // Lógica de gamificação:
+        // Ex: Cada ferramenta usada salva em média 30 min (0.5h)
+        const timeSaved = Math.floor(totalUses * 0.5); 
+        // Ex: O usuário pagaria R$ 35,00 para um humano fazer cada uma dessas tarefas
+        const valueGenerated = totalUses * 35; 
+        
+        setStats({ totalUses, timeSaved, valueGenerated });
       }
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
@@ -91,15 +115,13 @@ export default function UserProfile() {
   const handleManageSubscription = async () => {
     setIsProcessing(true);
     try {
-      // 1. Pega a sessão atual para enviar o token de segurança
       const { data: { session } } = await supabase.auth.getSession();
       
-      // 2. Chama o seu backend para gerar o link do Stripe
       const response = await fetch(`${config.API_BASE_URL}/create-portal-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}` // Se seu backend verificar token
+          'Authorization': `Bearer ${session?.access_token}` 
         },
         body: JSON.stringify({ 
             user_id: user.id,
@@ -110,7 +132,6 @@ export default function UserProfile() {
       const data = await response.json();
 
       if (data.url) {
-        // 3. Redireciona o usuário para o Stripe
         window.location.href = data.url;
       } else {
         alert("Erro: " + (data.error || "Não foi possível abrir o portal. Você tem uma assinatura ativa?"));
@@ -131,7 +152,6 @@ export default function UserProfile() {
     if (confirmText === 'DELETAR') {
       setIsProcessing(true);
       try {
-        // Chama a função RPC do Supabase (vamos criar no passo 2)
         const { error } = await supabase.rpc('delete_user'); 
         
         if (error) throw error;
@@ -165,7 +185,7 @@ export default function UserProfile() {
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 20px', position: 'relative', zIndex: 1 }}>
         
         {/* CABEÇALHO */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '50px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
           <div style={{ 
             width: '80px', height: '80px', borderRadius: '50%', 
             background: 'linear-gradient(135deg, #c084fc 0%, #db2777 100%)',
@@ -179,11 +199,44 @@ export default function UserProfile() {
           <div>
             <h1 style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0 0 5px 0' }}>Meu Perfil</h1>
             <p style={{ color: '#9ca3af', margin: 0 }}>{user.email}</p>
-            <div style={{ display: 'inline-block', marginTop: '10px', padding: '4px 12px', background: '#3b0764', borderRadius: '20px', fontSize: '0.8rem', color: '#d8b4fe', border: '1px solid #a855f7', fontWeight: 'bold' }}>
-              MEMBRO {user.user_metadata?.subscription_status === 'active' ? 'PRO' : 'FREE'}
+            
+            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <div style={{ padding: '4px 12px', background: '#3b0764', borderRadius: '20px', fontSize: '0.8rem', color: '#d8b4fe', border: '1px solid #a855f7', fontWeight: 'bold' }}>
+                  MEMBRO {isPro ? 'PRO' : 'FREE'}
+                </div>
+                
+                {/* Mostra saldo de créditos só se for FREE */}
+                {!isPro && (
+                    <div style={{ padding: '4px 12px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '20px', fontSize: '0.8rem', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span>🪙</span> {credits} Créditos
+                    </div>
+                )}
             </div>
           </div>
         </div>
+
+        {/* CALL TO ACTION PARA USUÁRIOS FREE */}
+        {!isPro && (
+            <div style={{ 
+                background: 'linear-gradient(90deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.05) 100%)', 
+                border: '1px solid rgba(245, 158, 11, 0.3)', 
+                padding: '20px', borderRadius: '16px', marginBottom: '40px', 
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px'
+            }}>
+                <div>
+                    <h3 style={{ color: '#fbbf24', margin: '0 0 5px 0', fontSize: '1.1rem' }}>Faça o Upgrade para o PRO</h3>
+                    <p style={{ color: '#d1d5db', margin: 0, fontSize: '0.9rem' }}>Uso ilimitado de todas as ferramentas e suporte prioritário.</p>
+                </div>
+                <Link to="/precos" style={{ 
+                    background: 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)', 
+                    color: 'white', padding: '10px 20px', borderRadius: '50px', 
+                    fontWeight: 'bold', textDecoration: 'none', fontSize: '0.9rem',
+                    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)'
+                }}>
+                    Ver Planos
+                </Link>
+            </div>
+        )}
 
         {/* CONQUISTAS */}
         <h2 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -208,7 +261,7 @@ export default function UserProfile() {
           <div style={{ background: 'linear-gradient(145deg, #1f2937 0%, #111827 100%)', padding: '25px', borderRadius: '20px', border: '1px solid #374151', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '80px', height: '80px', background: '#10b981', borderRadius: '50%', filter: 'blur(40px)', opacity: 0.2 }}></div>
             <ClockIcon style={{ width: '30px', color: '#34d399', marginBottom: '10px' }} />
-            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff' }}><AnimatedNumber value={stats.timeSaved} />h</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff' }}><AnimatedNumber value={stats.timeSaved} suffix="h" /></div>
             <div style={{ color: '#9ca3af', fontSize: '0.9rem' }}>Estimativa de tempo poupado</div>
           </div>
 
@@ -216,8 +269,8 @@ export default function UserProfile() {
           <div style={{ background: 'linear-gradient(145deg, #1f2937 0%, #111827 100%)', padding: '25px', borderRadius: '20px', border: '1px solid #374151', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '80px', height: '80px', background: '#f59e0b', borderRadius: '50%', filter: 'blur(40px)', opacity: 0.2 }}></div>
             <CurrencyDollarIcon style={{ width: '30px', color: '#fbbf24', marginBottom: '10px' }} />
-            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff' }}>R$ <AnimatedNumber value={stats.creditsSaved} /></div>
-            <div style={{ color: '#9ca3af', fontSize: '0.9rem' }}>Valor gerado</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff' }}><AnimatedNumber value={stats.valueGenerated} prefix="R$ " /></div>
+            <div style={{ color: '#9ca3af', fontSize: '0.9rem' }}>Valor gerado / economizado</div>
           </div>
         </div>
 
@@ -235,8 +288,8 @@ export default function UserProfile() {
                 <CreditCardIcon style={{ width: '24px', color: '#10b981' }} />
               </div>
               <div>
-                <div style={{ fontWeight: '600', color: 'white' }}>Assinatura</div>
-                <div style={{ fontSize: '0.9rem', color: '#9ca3af' }}>Gerenciar pagamentos e notas fiscais</div>
+                <div style={{ fontWeight: '600', color: 'white' }}>Assinatura Stripe</div>
+                <div style={{ fontSize: '0.9rem', color: '#9ca3af' }}>Gerenciar pagamentos, cancelar plano e ver notas fiscais</div>
               </div>
             </div>
             <button 
