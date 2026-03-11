@@ -668,9 +668,18 @@ def create_checkout_session():
         data = request.get_json(force=True)
         if isinstance(data, str): data = json.loads(data)
         
+        # 1. Pega a escolha do usuário enviada pelo Frontend
+        cycle = data.get('cycle', 'monthly')
+        
+        # 2. Define os IDs (stripe_price já é a sua variável global do Mensal)
+        yearly_price_id = "price_1T9sz5JCW0XFyX1JAQjEUy5n"
+        
+        # 3. Lógica: Se for anual, usa o ID novo. Se não, usa o ID mensal padrão.
+        selected_price = yearly_price_id if cycle == 'yearly' else stripe_price
+        
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
-            line_items=[{'price': stripe_price, 'quantity': 1}], 
+            line_items=[{'price': selected_price, 'quantity': 1}], 
             mode='subscription', 
             success_url=f'{frontend_url}/meu-perfil?success=true',
             cancel_url=f'{frontend_url}/precos?canceled=true',
