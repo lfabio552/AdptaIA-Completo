@@ -6,6 +6,7 @@ import { CheckIcon, SparklesIcon } from '@heroicons/react/24/solid';
 export default function PricingPage() {
   const [user, setUser] = useState(null);
   const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' ou 'yearly'
+  const [isLoading, setIsLoading] = useState(false); // Trava de botão
 
   useEffect(() => {
     const getUser = async () => {
@@ -15,31 +16,50 @@ export default function PricingPage() {
     getUser();
   }, []);
 
-  const handleSubscribe = async (planType) => {
+  const handleSubscribe = async () => {
+    console.log("1. Botão clicado! Ciclo:", billingCycle);
+    
     if (!user) {
+      console.log("2. Usuário não detectado, mandando pro login");
       window.location.href = '/login';
       return;
     }
     
-    // Endpoint do backend
+    console.log("3. Usuário:", user.email);
+    setIsLoading(true);
+    
+    // URL DIRETAMENTE NO CÓDIGO PARA GARANTIR QUE FUNCIONE
     const endpoint = 'https://adptaia-completo.onrender.com/create-checkout-session';
     
     try {
+      console.log("4. Chamando backend:", endpoint);
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             user_id: user.id, 
             email: user.email,
-            cycle: billingCycle // Envia 'monthly' ou 'yearly'
+            cycle: billingCycle 
         }),
       });
       
+      console.log("5. Resposta status:", response.status);
+      
       const data = await response.json();
-      if (data.url) window.location.href = data.url;
-      else alert('Erro: ' + data.error);
+      console.log("6. Dados da resposta:", data);
+
+      if (data.url) {
+          console.log("7. Sucesso! Redirecionando pro Stripe.");
+          window.location.href = data.url;
+      } else {
+          console.error("Erro na url", data);
+          alert('Erro ao gerar link: ' + (data.error || 'Tente novamente.'));
+          setIsLoading(false);
+      }
     } catch (error) {
-      alert('Erro: ' + error.message);
+      console.error("Erro geral (Catch):", error);
+      alert('Erro de conexão: ' + error.message);
+      setIsLoading(false);
     }
   };
 
@@ -90,24 +110,19 @@ export default function PricingPage() {
             display: 'inline-flex', 
             alignItems: 'center',
             backgroundColor: '#111827', 
-            padding: '6px', // O respiro exato entre o botão e a borda
-            borderRadius: '9999px', // Arredondamento perfeito
+            padding: '6px',
+            borderRadius: '9999px',
             border: '1px solid #374151',
             boxSizing: 'border-box'
           }}>
             <button 
               onClick={() => setBillingCycle('monthly')}
               style={{
-                margin: 0, // Reset crucial para tirar margem invisível do navegador
-                boxSizing: 'border-box',
-                padding: '8px 24px', // Reduzido no eixo Y (cima/baixo) para ter folga
-                borderRadius: '9999px',
-                border: 'none',
+                margin: 0, boxSizing: 'border-box',
+                padding: '8px 24px', borderRadius: '9999px', border: 'none',
                 backgroundColor: billingCycle === 'monthly' ? '#374151' : 'transparent',
                 color: billingCycle === 'monthly' ? '#fff' : '#9ca3af',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
+                fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s ease',
                 fontSize: '0.95rem'
               }}
             >
@@ -116,30 +131,18 @@ export default function PricingPage() {
             <button 
               onClick={() => setBillingCycle('yearly')}
               style={{
-                margin: 0, // Reset crucial
-                boxSizing: 'border-box',
-                padding: '8px 24px', // Reduzido no eixo Y
-                borderRadius: '9999px',
-                border: 'none',
+                margin: 0, boxSizing: 'border-box',
+                padding: '8px 24px', borderRadius: '9999px', border: 'none',
                 backgroundColor: billingCycle === 'yearly' ? '#7e22ce' : 'transparent',
                 color: billingCycle === 'yearly' ? '#fff' : '#9ca3af',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                fontSize: '0.95rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
+                fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.3s ease',
+                fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px'
               }}
             >
               Anual 
               <span style={{ 
-                fontSize: '0.75rem', 
-                background: '#fbbf24', 
-                color: '#000', 
-                padding: '2px 8px', 
-                borderRadius: '12px',
-                fontWeight: '800'
+                fontSize: '0.75rem', background: '#fbbf24', color: '#000', 
+                padding: '2px 8px', borderRadius: '12px', fontWeight: '800'
               }}>-20%</span>
             </button>
           </div>
@@ -147,24 +150,15 @@ export default function PricingPage() {
         
         {/* CARDS DE PREÇO */}
         <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '30px',
-          justifyContent: 'center',
-          alignItems: 'stretch'
+          display: 'flex', flexWrap: 'wrap', gap: '30px', 
+          justifyContent: 'center', alignItems: 'stretch'
         }}>
           
           {/* PLANO GRÁTIS */}
           <div style={{
-            flex: '1',
-            minWidth: '300px',
-            maxWidth: '380px',
-            backgroundColor: '#1f2937',
-            padding: '40px',
-            borderRadius: '24px',
-            border: '1px solid #374151',
-            display: 'flex',
-            flexDirection: 'column'
+            flex: '1', minWidth: '300px', maxWidth: '380px',
+            backgroundColor: '#1f2937', padding: '40px', borderRadius: '24px',
+            border: '1px solid #374151', display: 'flex', flexDirection: 'column'
           }}>
             <h3 style={{ fontSize: '1.5rem', marginBottom: '10px', color: '#fff', fontWeight: 'bold' }}>
               Iniciante
@@ -201,17 +195,10 @@ export default function PricingPage() {
           
           {/* PLANO PRO (DESTAQUE) */}
           <div style={{
-            flex: '1',
-            minWidth: '300px',
-            maxWidth: '380px',
-            backgroundColor: '#1f2937',
-            padding: '40px',
-            borderRadius: '24px',
-            border: '2px solid #a855f7',
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 0 40px rgba(168, 85, 247, 0.15)',
+            flex: '1', minWidth: '300px', maxWidth: '380px',
+            backgroundColor: '#1f2937', padding: '40px', borderRadius: '24px',
+            border: '2px solid #a855f7', position: 'relative', display: 'flex',
+            flexDirection: 'column', boxShadow: '0 0 40px rgba(168, 85, 247, 0.15)',
             transform: 'scale(1.02)'
           }}>
             <div style={{
@@ -237,20 +224,23 @@ export default function PricingPage() {
               Para profissionais e estudantes que precisam de poder total.
             </p>
             
+            {/* O BOTÃO FOI CORRIGIDO AQUI (Sem passar o parâmetro 'pro') */}
             <button 
-              onClick={() => handleSubscribe('pro')}
+              onClick={handleSubscribe}
+              disabled={isLoading}
               style={{
                 width: '100%', padding: '15px', 
                 background: 'linear-gradient(90deg, #7e22ce 0%, #a855f7 100%)',
                 border: 'none', color: '#fff', borderRadius: '12px',
-                fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', 
+                fontSize: '1.1rem', fontWeight: 'bold', cursor: isLoading ? 'wait' : 'pointer', 
                 boxShadow: '0 4px 15px rgba(126, 34, 206, 0.4)',
-                transition: 'transform 0.2s'
+                transition: 'transform 0.2s',
+                opacity: isLoading ? 0.7 : 1
               }}
-              onMouseDown={e => e.target.style.transform = 'scale(0.98)'}
-              onMouseUp={e => e.target.style.transform = 'scale(1)'}
+              onMouseDown={e => !isLoading && (e.target.style.transform = 'scale(0.98)')}
+              onMouseUp={e => !isLoading && (e.target.style.transform = 'scale(1)')}
             >
-              {billingCycle === 'monthly' ? 'Assinar Mensal' : 'Assinar Anual (Economize)'}
+              {isLoading ? 'Carregando...' : (billingCycle === 'monthly' ? 'Assinar Mensal' : 'Assinar Anual (Economize)')}
             </button>
 
             <div style={{ marginTop: '30px' }}>
