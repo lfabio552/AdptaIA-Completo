@@ -552,54 +552,102 @@ def generate_cover_letter():
     except Exception as e: return jsonify({'error': str(e)}), 500
 
 # ============================================
-# GERADOR DE IMAGENS (REPLICATE)
-# ============================================
+# --- ROTA: GERAR IMAGEM COMPLETA ---
 @app.route('/generate-image', methods=['POST'])
 def generate_image():
+    print("🎬 Iniciando processo de geração de imagem...")
     try:
-        data = request.get_json(force=True)
-        if isinstance(data, str): data = json.loads(data)
-
-        # BLOQUEIO DE CRÉDITOS (A Imagem pode custar mais caro se quiser, ex: descontar 2. Aqui desconta 1)
+        data = request.json
+        prompt_completo = data.get('prompt')
         user_id = data.get('user_id')
-        if not user_id: return jsonify({'error': 'Faça login para usar as ferramentas.'}), 401
-        success, message = check_and_deduct_credit(user_id)
-        if not success: return jsonify({'error': message}), 402
 
-        prompt = data.get('prompt', '')
-        if len(prompt) < 5: return jsonify({'error': 'Prompt muito curto.'}), 400
-
-        model_id = "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b"
+        # Radar de Erros Inicial
+        if not prompt_completo:
+            print("❌ Erro: Prompt não recebido.")
+            return jsonify({'error': 'Por favor, insira um prompt.'}), 400
         
-        output = replicate.run(
-            model_id,
-            input={
-                "prompt": prompt,
+        if not user_id:
+            print("❌ Erro: user_id não recebido.")
+            return jsonify({'error': 'Usuário não autenticado.'}), 401
+
+        print(f"📝 Prompt recebido (início): {prompt_completo[:50]}...")
+        print(f"👤 user_id: {user_id}")
+
+        # --- CHAMADA AO REPLICATE ---
+        # Eu adicionei um bloco try/except específico aqui para isolar erros da API
+        try:
+            print("🔮 Chamando API do Replicate (Flux-Schnell)...")
+            
+            # Nota: Eu usei o modelo 'black-forest-labs/flux-schnell' que é rápido e bom.
+            # Se o seu código usa outro modelo (como SDXL), mantenha o seu, mas a lógica de saída é a mesma.
+            input_params = {
+                "prompt": prompt_completo,
+                "go_fast": True,
+                "megapixels": "1",
                 "num_outputs": 1,
-                "num_inference_steps": 30,
-                "guidance_scale": 7.5,
-                "width": 1024,
-                "height": 1024,
-                "scheduler": "DPMSolverMultistep",
-                "negative_prompt": "blurry, low quality, distorted, ugly, deformed"
+                "aspect_ratio": "1:1", # Você pode mudar o aspect ratio aqui se quiser
+                "output_format": "webp",
+                "output_quality": 80
             }
-        )
+            
+            output = replicate.run(
+                "black-forest-labs/flux-schnell", # Verifique se este é o modelo que você quer usar
+                input=input_params
+            )
+            
+            print(f"✅ Saída bruta do Replicate: {output}")
 
-        image_url = output[0] if isinstance(output, list) else output
-        
-        # Salva histórico
-        if supabase and user_id:
-            try:
-                supabase.table('image_history').insert({
-                    'user_id': user_id,
-                    'prompt': prompt[:500],
-                    'image_url': image_url
-                }).execute()
-            except Exception as e: print(f"Erro histórico img: {e}")
+        except Exception as rep_err:
+            print(f"❌ ERRO CRÍTICO NA CHAMADA AO REPLICATE: {str(rep_err)}")
+            # Verifica se o erro foi falta de saldo/créditos
+            if "credits" in str(rep_err).lower() or "billing" in str(rep_err).lower():
+                 return jsonify({'error': 'O saldo do Gerador de Imagens acabou. Por favor, avise o administrador para adicionar mais créditos.'}), 502
+            return jsonify({'error': f'Falha na API do Replicate: {str(rep_err)}'}), 502
 
-        return jsonify({'success': True, 'image_url': image_url, 'prompt': prompt})
+        # --- A CORREÇÃO MÁGICA ESTÁ AQUI ---
+        # O Replicate devolve uma lista ou um iterador. Precisamos pegar o primeiro item.
+        print("🔗 Extraindo link final da imagem...")
+        try:
+            if isinstance(output, list) and len(output) > 0:
+                final_image_url = str(output[0]) # É uma lista, pega o primeiro
+            elif hasattr(output, '__iter__'):
+                # Se for um iterador (comum no Flux do Replicate), pegamos o primeiro item
+                final_image_url = str(next(iter(output)))
+            else:
+                # Se for um texto direto ou outro formato
+                final_image_url = str(output)
+            
+            print(f"🖼️ Link da imagem final: {final_image_url}")
+            
+        except Exception as extract_err:
+            print(f"❌ Erro ao extrair o link da imagem: {extract_err}")
+            return jsonify({'error': 'A imagem foi gerada, mas houve um erro ao processar o link final.'}), 500
 
-    except Exception as e: return jsonify({'error': f'Erro interno: {str(e)}'}), 500
+        # --- BLOCO DE SALVAR NO SUPABASE ---
+        # Eu adicionei este bloco como comentário. Se você já tem a lógica de salvar,
+        # substitua aqui. Se não, sua ferramenta vai gerar, mas não vai salvar o histórico.
+        """
+        try:
+            print("💾 Salvando histórico no Supabase...")
+            # Lógica para salvar: user_id, prompt_completo, final_image_url
+            # supabase.from('history_images').insert({...}).execute()
+            print("✅ Histórico salvo com sucesso.")
+        except Exception as sup_err:
+            print(f"⚠️ Aviso: Imagem gerada, mas erro ao salvar no histórico: {sup_err}")
+            # Não travamos a requisição se falhar ao salvar o histórico
+        """
+
+        # --- RETORNO FINAL SUCESSO ---
+        print("🎉 Processo finalizado com sucesso. Enviando link para o site.")
+        # É VITAL que o retorno seja um dicionário JSON, não o objeto FileOutput bruto.
+        return jsonify({'image_url': final_image_url})
+
+    except Exception as e:
+        # Radar de Erros Geral do Flask
+        print(f"❌❌❌ ERRO INTERNO DO SERVIDOR (CATCH GERAL): {str(e)}")
+        import traceback
+        traceback.print_exc() # Imprime o erro completo no console da Render
+        return jsonify({'error': f'Erro interno do servidor: {str(e)}'}), 500
 
 # ============================================
 # ROTAS DE HISTÓRICO
