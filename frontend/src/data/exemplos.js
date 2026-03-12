@@ -83,14 +83,14 @@ export const exemplosPorFerramenta = {
       id: 1,
       titulo: "🐉 Dragão em Cidade Futurista",
       prompt: "Um dragão de cristal azul sobrevoando uma cidade cyberpunk à noite, com arranha-céus de neon e chuva, estilo cinematográfico, luzes dramáticas.",
-      imagem: "https://placehold.co/600x400/8b5cf6/ffffff?text=Dragão+Cyberpunk",
+      imagem: "/img/dragao-exemplo.jpg",
       resultado: "Imagem gerada com foco em detalhes do dragão, contraste de luzes de neon e atmosfera chuvosa futurista."
     },
     {
       id: 2,
       titulo: "🏝️ Praia Paradisíaca com Palafitas",
       prompt: "Praia tropical com água cristalina turquesa, palmeiras, casas de madeira sobre a água no estilo maldivas, pôr do sol alaranjado, fotorrealista, 8K.",
-      imagem: "https://placehold.co/600x400/f59e0b/ffffff?text=Praia+Paradisíaca",
+      imagem: "/img/praia-exemplo.jpg",
       resultado: "Cena realista com reflexos da água, detalhes das palafitas e gradiente de cores do pôr do sol."
     }
   ],
