@@ -23,7 +23,7 @@ from pypdf import PdfReader
 load_dotenv() 
 
 app = Flask(__name__)
-CORS(app) 
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True) 
 
 # --- CONFIGURAÇÃO DE CHAVES ---
 stripe_key = os.environ.get("STRIPE_SECRET_KEY")
